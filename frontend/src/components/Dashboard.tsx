@@ -2,6 +2,28 @@ import { useState, useEffect, useCallback } from "react";
 import type { Language, DashboardStats, StationLoad } from "../types";
 import { t } from "../i18n/translations";
 
+interface InventoryAlert {
+  ingredient_id: number;
+  name: string;
+  category: string;
+  current_stock: number;
+  unit: string;
+  min_stock_alert: number;
+  is_low: boolean;
+  change_amount: number;
+  reason: string;
+}
+
+interface CatSummary {
+  category: string;
+  emoji: string;
+  total_items: number;
+  critical_count: number;
+  alert_count: number;
+  ok_count: number;
+  health_pct: number;
+}
+
 interface Props {
   language: Language;
 }
@@ -39,6 +61,17 @@ export default function Dashboard({ language }: Props) {
   const [ingredients, setIngredients] = useState<{ menu: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [catSummaries, setCatSummaries] = useState<CatSummary[]>([]);
+  const [invAlerts, setInvAlerts] = useState<InventoryAlert[]>([]);
+  const [invFlash, setInvFlash] = useState<InventoryAlert | null>(null);
+
+  const fetchInventorySummary = useCallback(async () => {
+    const res = await fetch("/api/inventory/order-suggestions");
+    if (res.ok) {
+      const data = await res.json();
+      setCatSummaries(data.categories ?? []);
+    }
+  }, []);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -62,11 +95,38 @@ export default function Dashboard({ language }: Props) {
     }
   }, []);
 
+  // リアルタイム: 在庫変動WSイベントを受信
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const msg = (e as CustomEvent).detail;
+      if (msg?.type === "inventory_updated") {
+        const d = msg.data as InventoryAlert;
+        setInvFlash(d);
+        setTimeout(() => setInvFlash(null), 5000);
+        if (d.is_low) {
+          setInvAlerts((prev) => {
+            const filtered = prev.filter((a) => a.ingredient_id !== d.ingredient_id);
+            return [d, ...filtered].slice(0, 10);
+          });
+        } else {
+          setInvAlerts((prev) => prev.filter((a) => a.ingredient_id !== d.ingredient_id));
+        }
+        fetchInventorySummary();
+      }
+    };
+    window.addEventListener("ws_message", handler);
+    return () => window.removeEventListener("ws_message", handler);
+  }, [fetchInventorySummary]);
+
   useEffect(() => {
     fetchAll();
-    const id = setInterval(fetchAll, 30000); // 30秒自動更新
+    fetchInventorySummary();
+    const id = setInterval(() => {
+      fetchAll();
+      fetchInventorySummary();
+    }, 30000);
     return () => clearInterval(id);
-  }, [fetchAll]);
+  }, [fetchAll, fetchInventorySummary]);
 
   if (loading) {
     return <div style={s.center}>{t(language, "loading")}</div>;
@@ -164,6 +224,85 @@ export default function Dashboard({ language }: Props) {
               <div key={item.menu} style={s.menuRow}>
                 <span style={{ color: "#2d2013", flex: 1 }}>{item.menu}</span>
                 <span style={s.countBadge}>×{item.count}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── リアルタイム在庫フラッシュ通知 ── */}
+      {invFlash && (
+        <div style={{
+          ...s.invFlash,
+          borderColor: invFlash.is_low ? "#e94560" : "#27ae60",
+          background: invFlash.is_low ? "rgba(233,69,96,0.08)" : "rgba(39,174,96,0.08)",
+        }}>
+          <span style={{ fontSize: "1.1rem" }}>{invFlash.is_low ? "⚠" : "✓"}</span>
+          <span style={{ fontWeight: 700, color: invFlash.is_low ? "#e94560" : "#27ae60" }}>
+            {invFlash.name}
+          </span>
+          <span style={{ color: "#8c6f5a", fontSize: "0.85rem" }}>
+            {invFlash.change_amount > 0 ? `+${invFlash.change_amount}` : invFlash.change_amount}{invFlash.unit}
+            　{invFlash.reason}
+          </span>
+          {invFlash.is_low && (
+            <span style={{ marginLeft: "auto", color: "#e94560", fontSize: "0.82rem", fontWeight: 700 }}>
+              残{invFlash.current_stock}{invFlash.unit} ⚠在庫不足
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── 在庫カテゴリ別ヘルスサマリー ── */}
+      {catSummaries.length > 0 && (
+        <section style={s.section}>
+          <h3 style={s.sectionTitle}>🧮 在庫状況サマリー</h3>
+          <div style={s.catGrid}>
+            {catSummaries.map((cat) => {
+              const color = cat.critical_count > 0 ? "#e94560"
+                : cat.alert_count > 0 ? "#f39c12"
+                : "#27ae60";
+              return (
+                <div key={cat.category} style={{ ...s.catCard, borderColor: color + "55" }}>
+                  <div style={{ fontSize: "1.5rem" }}>{cat.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "0.78rem", color: "#8c6f5a", fontWeight: 600 }}>{cat.category}</div>
+                    <div style={s.catBarTrack}>
+                      <div style={{
+                        ...s.catBarFill,
+                        width: `${cat.health_pct}%`,
+                        background: color,
+                      }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", marginTop: 3 }}>
+                      <span style={{ color }}>{cat.health_pct}% 良好</span>
+                      {cat.critical_count > 0 && (
+                        <span style={{ color: "#e94560", fontWeight: 700 }}>🔴 {cat.critical_count}品 危機</span>
+                      )}
+                      {cat.alert_count > 0 && cat.critical_count === 0 && (
+                        <span style={{ color: "#f39c12", fontWeight: 700 }}>⚠ {cat.alert_count}品 要注意</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── 在庫不足アラート一覧（リアルタイム更新） ── */}
+      {invAlerts.length > 0 && (
+        <section style={s.section}>
+          <h3 style={{ ...s.sectionTitle, color: "#e94560" }}>🚨 在庫不足アラート（リアルタイム）</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {invAlerts.map((a) => (
+              <div key={a.ingredient_id} style={s.invAlertRow}>
+                <span style={{ fontWeight: 700, color: "#e94560" }}>{a.name}</span>
+                <span style={{ fontSize: "0.82rem", color: "#8c6f5a" }}>{a.category}</span>
+                <span style={{ marginLeft: "auto", fontWeight: 800, color: "#e94560" }}>
+                  残 {a.current_stock}{a.unit}
+                </span>
               </div>
             ))}
           </div>
@@ -286,4 +425,24 @@ const s: Record<string, React.CSSProperties> = {
     padding: "2px 10px", borderRadius: 6, fontWeight: 700, fontSize: "0.85rem",
   },
   center: { textAlign: "center", padding: 60, color: "#8c6f5a" },
+  invFlash: {
+    display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const,
+    padding: "10px 14px", borderRadius: 10, border: "1.5px solid",
+    marginBottom: 16, transition: "all 0.3s",
+  },
+  catGrid: {
+    display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10,
+  },
+  catCard: {
+    background: "rgba(255,255,255,0.88)", borderRadius: 12, padding: "12px",
+    display: "flex", gap: 10, alignItems: "flex-start",
+    border: "1.5px solid", boxShadow: "0 2px 10px rgba(180,100,60,0.06)",
+  },
+  catBarTrack: { height: 5, background: "rgba(0,0,0,0.08)", borderRadius: 99, overflow: "hidden", marginTop: 5 },
+  catBarFill: { height: "100%", borderRadius: 99, transition: "width 0.5s" },
+  invAlertRow: {
+    display: "flex", alignItems: "center", gap: 10,
+    background: "rgba(233,69,96,0.06)", border: "1px solid rgba(233,69,96,0.2)",
+    borderRadius: 8, padding: "8px 12px",
+  },
 };

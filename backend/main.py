@@ -368,6 +368,9 @@ app.include_router(cooking_history.router)
 app.include_router(predict.router)
 app.include_router(tasks_now.router)
 
+# inventory ルーターに WebSocket manager を注入
+inventory.set_manager(manager)
+
 # アップロード済み画像を静的ファイルとして配信
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 

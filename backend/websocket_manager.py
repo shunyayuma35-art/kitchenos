@@ -123,5 +123,15 @@ class ConnectionManager:
             stations=["cooking", "plating", "prep", "admin"],
         )
 
+    async def broadcast_inventory_updated(self, data: dict):
+        """在庫変動リアルタイム通知 → 管理・仕込みへ配信
+        data: { ingredient_id, name, category, current_stock, unit,
+                min_stock_alert, is_low, change_amount, reason }
+        """
+        await self.broadcast(
+            {"type": "inventory_updated", "data": data},
+            stations=["prep", "admin"],
+        )
+
 
 manager = ConnectionManager()

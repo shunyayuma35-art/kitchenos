@@ -2,6 +2,36 @@ import { useState, useEffect, useCallback } from "react";
 import type { Ingredient, InventoryLog, Language } from "../types";
 import { t } from "../i18n/translations";
 
+interface OrderItem {
+  id: number;
+  name: string;
+  unit: string;
+  current_stock: number;
+  min_stock_alert: number;
+  avg_daily_usage: number;
+  days_remaining: number | null;
+  suggested_order: number;
+  status: "critical" | "low" | "ok" | "no_data";
+}
+
+interface OrderCategory {
+  category: string;
+  emoji: string;
+  total_items: number;
+  critical_count: number;
+  alert_count: number;
+  ok_count: number;
+  health_pct: number;
+  items: OrderItem[];
+}
+
+interface OrderSuggestions {
+  generated_at: string;
+  target_days: number;
+  total_order_items: number;
+  categories: OrderCategory[];
+}
+
 interface Props {
   language: Language;
 }
@@ -23,6 +53,7 @@ const CATEGORIES: { key: string; label: string; emoji: string; color: string }[]
 const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
 
 export default function InventoryManager({ language }: Props) {
+  const [tab, setTab] = useState<"stock" | "order">("stock");
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -32,6 +63,9 @@ export default function InventoryManager({ language }: Props) {
   const [todayUsage, setTodayUsage] = useState<{ name: string; unit: string; total_used: number }[]>([]);
   const [openCats, setOpenCats] = useState<Set<string>>(new Set(CATEGORIES.map((c) => c.key)));
   const [filterCat, setFilterCat] = useState<string>("all");
+  const [orderData, setOrderData] = useState<OrderSuggestions | null>(null);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [invFlash, setInvFlash] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     const [ingRes, usageRes] = await Promise.all([
@@ -46,7 +80,34 @@ export default function InventoryManager({ language }: Props) {
     setLoading(false);
   }, []);
 
+  const fetchOrderSuggestions = useCallback(async () => {
+    setOrderLoading(true);
+    const res = await fetch("/api/inventory/order-suggestions");
+    if (res.ok) setOrderData(await res.json());
+    setOrderLoading(false);
+  }, []);
+
+  // リアルタイムWS: 在庫変動を受信したら自動リフレッシュ
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const msg = (e as CustomEvent).detail;
+      if (msg?.type === "inventory_updated") {
+        const d = msg.data;
+        setInvFlash(`${d.name} が更新されました（${d.change_amount > 0 ? "+" : ""}${d.change_amount}${d.unit}）`);
+        setTimeout(() => setInvFlash(null), 4000);
+        fetchAll();
+        if (tab === "order") fetchOrderSuggestions();
+      }
+    };
+    window.addEventListener("ws_message", handler);
+    return () => window.removeEventListener("ws_message", handler);
+  }, [fetchAll, fetchOrderSuggestions, tab]);
+
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    if (tab === "order" && !orderData) fetchOrderSuggestions();
+  }, [tab, orderData, fetchOrderSuggestions]);
 
   const openLogs = async (ing: Ingredient) => {
     setLogTarget(ing);
@@ -149,13 +210,49 @@ export default function InventoryManager({ language }: Props) {
           {alertCount > 0 && <span style={s.alertBadge}>⚠ {alertCount}</span>}
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn-secondary btn-small" onClick={fetchAll}>↻</button>
-          <button className="btn-primary btn-small" onClick={() => setShowForm(true)}>
-            + {t(language, "addIngredient")}
-          </button>
+          <button className="btn-secondary btn-small" onClick={() => { fetchAll(); if (tab === "order") fetchOrderSuggestions(); }}>↻</button>
+          {tab === "stock" && (
+            <button className="btn-primary btn-small" onClick={() => setShowForm(true)}>
+              + {t(language, "addIngredient")}
+            </button>
+          )}
         </div>
       </div>
 
+      {/* メインタブ */}
+      <div style={s.mainTabRow}>
+        <button
+          style={{ ...s.mainTab, ...(tab === "stock" ? s.mainTabActive : {}) }}
+          onClick={() => setTab("stock")}
+        >
+          📦 在庫管理
+        </button>
+        <button
+          style={{ ...s.mainTab, ...(tab === "order" ? s.mainTabActive : {}) }}
+          onClick={() => setTab("order")}
+        >
+          📊 発注ダッシュボード
+          {orderData && orderData.total_order_items > 0 && (
+            <span style={s.orderBadge}>{orderData.total_order_items}</span>
+          )}
+        </button>
+      </div>
+
+      {/* リアルタイム更新フラッシュ */}
+      {invFlash && (
+        <div style={s.flash}>🔄 {invFlash}</div>
+      )}
+
+      {/* ── 発注ダッシュボード ── */}
+      {tab === "order" && (
+        <OrderDashboard
+          data={orderData}
+          loading={orderLoading}
+          onRefresh={fetchOrderSuggestions}
+        />
+      )}
+
+      {tab === "stock" && (<>
       {/* カテゴリフィルタータブ */}
       <div style={s.catTabRow}>
         <button
@@ -210,7 +307,7 @@ export default function InventoryManager({ language }: Props) {
         <div style={s.empty}>{t(language, "noIngredients")}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {displayGroups.map((cat) => {
+          {displayGroups.map((cat: typeof grouped[number]) => {
             const isOpen = openCats.has(cat.key);
             const catAlerts = cat.items.filter(
               (i) => i.min_stock_alert > 0 && i.current_stock <= i.min_stock_alert
@@ -319,9 +416,242 @@ export default function InventoryManager({ language }: Props) {
           })}
         </div>
       )}
+      </>)}
     </div>
   );
 }
+
+// ── 発注ダッシュボード ────────────────────────────────────
+function OrderDashboard({ data, loading, onRefresh }: {
+  data: OrderSuggestions | null;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [openCats, setOpenCats] = useState<Set<string>>(new Set());
+  const [showOrderOnly, setShowOrderOnly] = useState(false);
+
+  if (loading) return <div style={{ textAlign: "center", padding: 40, color: "#a0a0b0" }}>読み込み中...</div>;
+  if (!data) return (
+    <div style={{ textAlign: "center", padding: 40 }}>
+      <button className="btn-primary" onClick={onRefresh}>発注データを取得</button>
+    </div>
+  );
+
+  const toggleCat = (key: string) => {
+    setOpenCats((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const STATUS_COLOR: Record<string, string> = {
+    critical: "#e94560",
+    low: "#f39c12",
+    ok: "#27ae60",
+    no_data: "#555570",
+  };
+  const STATUS_LABEL: Record<string, string> = {
+    critical: "🔴 危機",
+    low: "🟡 要注意",
+    ok: "🟢 良好",
+    no_data: "⚪ データなし",
+  };
+
+  const totalOrderItems = data.categories.reduce((sum, c) => sum + c.items.filter(i => i.suggested_order > 0).length, 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* サマリーバー */}
+      <div style={od.summaryBar}>
+        <div style={od.summaryItem}>
+          <span style={{ fontSize: "1.4rem" }}>📋</span>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "#a0a0b0" }}>発注必要品目</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#7fb3ff" }}>{totalOrderItems}</div>
+          </div>
+        </div>
+        <div style={od.summaryItem}>
+          <span style={{ fontSize: "1.4rem" }}>⏱</span>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "#a0a0b0" }}>目標在庫日数</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#27ae60" }}>{data.target_days}日分</div>
+          </div>
+        </div>
+        <div style={od.summaryItem}>
+          <span style={{ fontSize: "1.4rem" }}>🕐</span>
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "#a0a0b0" }}>最終更新</div>
+            <div style={{ fontSize: "0.85rem", color: "#eaeaea" }}>
+              {new Date(data.generated_at).toLocaleTimeString("ja-JP")}
+            </div>
+          </div>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            style={{ ...od.filterBtn, ...(showOrderOnly ? od.filterBtnActive : {}) }}
+            onClick={() => setShowOrderOnly(!showOrderOnly)}
+          >
+            発注品のみ
+          </button>
+          <button className="btn-secondary btn-small" onClick={onRefresh}>↻ 更新</button>
+        </div>
+      </div>
+
+      {/* カテゴリ別発注リスト */}
+      {data.categories.map((cat) => {
+        const displayItems = showOrderOnly
+          ? cat.items.filter(i => i.suggested_order > 0)
+          : cat.items;
+        if (displayItems.length === 0) return null;
+
+        const isOpen = openCats.has(cat.category);
+        const needOrderCount = cat.items.filter(i => i.suggested_order > 0).length;
+        const healthColor = cat.critical_count > 0 ? "#e94560"
+          : cat.alert_count > 0 ? "#f39c12" : "#27ae60";
+
+        return (
+          <div key={cat.category} style={{ ...od.catSection, borderColor: healthColor + "44" }}>
+            {/* カテゴリヘッダー */}
+            <button style={{ ...od.catHeader, borderBottomColor: isOpen ? healthColor + "33" : "transparent" }}
+              onClick={() => toggleCat(cat.category)}>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: "1.4rem" }}>{cat.emoji}</span>
+                <span style={{ fontWeight: 800, color: healthColor }}>{cat.category}</span>
+                {/* ヘルスバー */}
+                <div style={{ width: 60, height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ width: `${cat.health_pct}%`, height: "100%", background: healthColor, borderRadius: 99 }} />
+                </div>
+                <span style={{ color: "#555570", fontSize: "0.82rem" }}>{cat.health_pct}%</span>
+                {needOrderCount > 0 && (
+                  <span style={{ background: "#e9456033", color: "#e94560", borderRadius: 999, padding: "1px 8px", fontSize: "0.78rem", fontWeight: 700 }}>
+                    発注 {needOrderCount}品
+                  </span>
+                )}
+              </span>
+              <span style={{ color: "#555570", fontSize: "0.9rem", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+            </button>
+
+            {/* 食材別発注テーブル */}
+            {isOpen && (
+              <div style={od.tableWrap}>
+                <table style={od.table}>
+                  <thead>
+                    <tr>
+                      <th style={od.th}>食材名</th>
+                      <th style={od.th}>現在庫</th>
+                      <th style={od.th}>日平均消費</th>
+                      <th style={od.th}>残り日数</th>
+                      <th style={od.th}>推奨発注量</th>
+                      <th style={od.th}>状態</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayItems.map((item) => {
+                      const sc = STATUS_COLOR[item.status];
+                      return (
+                        <tr key={item.id} style={{ background: item.status === "critical" ? "#e9456011" : item.status === "low" ? "#f39c1211" : "transparent" }}>
+                          <td style={od.td}><span style={{ fontWeight: 700, color: "#eaeaea" }}>{item.name}</span></td>
+                          <td style={od.td}>
+                            <span style={{ fontWeight: 700, color: sc }}>{item.current_stock}{item.unit}</span>
+                          </td>
+                          <td style={{ ...od.td, color: "#a0a0b0" }}>
+                            {item.avg_daily_usage > 0 ? `${item.avg_daily_usage}${item.unit}/日` : "—"}
+                          </td>
+                          <td style={od.td}>
+                            <span style={{ fontWeight: 700, color: sc }}>
+                              {item.days_remaining !== null ? `${item.days_remaining}日` : "—"}
+                            </span>
+                          </td>
+                          <td style={od.td}>
+                            {item.suggested_order > 0 ? (
+                              <span style={{ fontWeight: 800, color: "#7fb3ff", background: "#7fb3ff22", padding: "2px 10px", borderRadius: 6 }}>
+                                +{item.suggested_order}{item.unit}
+                              </span>
+                            ) : (
+                              <span style={{ color: "#27ae60", fontSize: "0.85rem" }}>不要</span>
+                            )}
+                          </td>
+                          <td style={od.td}>
+                            <span style={{ color: sc, fontWeight: 700, fontSize: "0.82rem" }}>
+                              {STATUS_LABEL[item.status]}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* 発注リスト（まとめ） */}
+      {totalOrderItems > 0 && (
+        <div style={od.orderListCard}>
+          <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#eaeaea", marginBottom: 12 }}>
+            📋 今日の発注リスト（{totalOrderItems}品目）
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {data.categories.flatMap(cat =>
+              cat.items
+                .filter(i => i.suggested_order > 0)
+                .map(item => (
+                  <div key={item.id} style={od.orderRow}>
+                    <span style={{ fontSize: "1rem" }}>{cat.emoji}</span>
+                    <span style={{ fontWeight: 700, color: "#eaeaea", flex: 1 }}>{item.name}</span>
+                    <span style={{ color: "#a0a0b0", fontSize: "0.82rem" }}>{cat.category}</span>
+                    <span style={{ fontWeight: 800, color: "#7fb3ff", marginLeft: "auto" }}>
+                      +{item.suggested_order}{item.unit}
+                    </span>
+                    <span style={{ fontSize: "0.78rem", color: STATUS_COLOR[item.status], fontWeight: 700 }}>
+                      {STATUS_LABEL[item.status]}
+                    </span>
+                  </div>
+                ))
+            )}
+          </div>
+          <div style={{ marginTop: 12, fontSize: "0.78rem", color: "#555570" }}>
+            ※ 過去7日間の平均消費量をもとに {data.target_days}日分の在庫を確保する発注量を算出しています
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const od: Record<string, React.CSSProperties> = {
+  summaryBar: {
+    display: "flex", gap: 16, flexWrap: "wrap" as const, alignItems: "center",
+    background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "14px 16px",
+    border: "1px solid rgba(255,255,255,0.08)",
+  },
+  summaryItem: { display: "flex", gap: 10, alignItems: "center" },
+  filterBtn: {
+    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+    color: "#a0a0b0", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: "0.82rem", fontWeight: 600,
+  },
+  filterBtnActive: { background: "#7fb3ff22", borderColor: "#7fb3ff", color: "#7fb3ff" },
+  catSection: { background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid", overflow: "hidden" },
+  catHeader: {
+    width: "100%", background: "rgba(255,255,255,0.03)", border: "none", borderBottom: "1px solid",
+    padding: "14px 16px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center",
+  },
+  tableWrap: { overflowX: "auto" as const, padding: "0 8px 8px" },
+  table: { width: "100%", borderCollapse: "collapse" as const, fontSize: "0.88rem" },
+  th: { padding: "8px 12px", color: "#555570", fontWeight: 600, textAlign: "left" as const, borderBottom: "1px solid rgba(255,255,255,0.06)", whiteSpace: "nowrap" as const },
+  td: { padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.04)", whiteSpace: "nowrap" as const },
+  orderListCard: {
+    background: "rgba(127,179,255,0.05)", borderRadius: 14, padding: 16,
+    border: "1.5px solid rgba(127,179,255,0.2)",
+  },
+  orderRow: {
+    display: "flex", alignItems: "center", gap: 10,
+    background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px",
+  },
+};
 
 // ── 在庫調整フォーム ────────────────────────────────────
 function AdjustForm({ ingredient, language, onDone, onCancel }: {
@@ -619,4 +949,23 @@ const s: Record<string, React.CSSProperties> = {
   },
   center: { textAlign: "center", padding: 60, color: "#a0a0b0" },
   empty: { textAlign: "center", padding: 40, color: "#555570" },
+  mainTabRow: { display: "flex", gap: 8, marginBottom: 16 },
+  mainTab: {
+    display: "flex", alignItems: "center", gap: 8,
+    background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.1)",
+    color: "#a0a0b0", borderRadius: 10, padding: "10px 18px",
+    cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, transition: "all 0.15s",
+  },
+  mainTabActive: {
+    background: "rgba(127,179,255,0.12)", borderColor: "#7fb3ff", color: "#7fb3ff",
+  },
+  orderBadge: {
+    background: "#e9456033", color: "#e94560",
+    borderRadius: 999, padding: "1px 7px", fontSize: "0.75rem", fontWeight: 800,
+  },
+  flash: {
+    background: "rgba(127,179,255,0.1)", border: "1px solid rgba(127,179,255,0.3)",
+    color: "#7fb3ff", borderRadius: 8, padding: "8px 14px",
+    fontSize: "0.85rem", fontWeight: 600, marginBottom: 12,
+  },
 };

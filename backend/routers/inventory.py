@@ -7,11 +7,12 @@ DELETE /api/inventory/{id}          — 食材削除
 POST   /api/inventory/{id}/adjust   — 在庫量を手動調整（入荷・廃棄）
 GET    /api/inventory/{id}/logs     — 変動履歴
 GET    /api/inventory/alerts        — 不足アラート一覧
+GET    /api/inventory/order-suggestions — 発注提案（カテゴリ別・残日数・推奨発注量）
 GET    /api/inventory/menu/{menu_id}         — メニューの使用食材一覧
 POST   /api/inventory/menu/{menu_id}         — メニューの使用食材を一括登録
 DELETE /api/inventory/menu/{menu_id}/{item_id} — 紐付け削除
 """
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -19,6 +20,14 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
+from websocket_manager import ConnectionManager
+
+# main.py で作成された manager インスタンスを使う
+_manager: "ConnectionManager | None" = None
+
+def set_manager(m: "ConnectionManager"):
+    global _manager
+    _manager = m
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 
@@ -51,6 +60,7 @@ def create_ingredient(payload: schemas.IngredientCreate, db: Session = Depends(g
         unit=payload.unit,
         current_stock=payload.current_stock,
         min_stock_alert=payload.min_stock_alert,
+        category=payload.category,
     )
     db.add(ing)
     # 初期在庫ログ
@@ -99,7 +109,7 @@ def delete_ingredient(ingredient_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{ingredient_id}/adjust", response_model=schemas.IngredientOut)
-def adjust_stock(
+async def adjust_stock(
     ingredient_id: int,
     payload: schemas.StockAdjust,
     db: Session = Depends(get_db),
@@ -121,6 +131,22 @@ def adjust_stock(
     db.add(log)
     db.commit()
     db.refresh(ing)
+
+    # リアルタイム通知
+    if _manager:
+        is_low = ing.min_stock_alert > 0 and ing.current_stock <= ing.min_stock_alert
+        await _manager.broadcast_inventory_updated({
+            "ingredient_id": ing.id,
+            "name": ing.name,
+            "category": ing.category or "その他",
+            "current_stock": ing.current_stock,
+            "unit": ing.unit,
+            "min_stock_alert": ing.min_stock_alert,
+            "is_low": is_low,
+            "change_amount": payload.amount,
+            "reason": payload.reason,
+        })
+
     return ing
 
 
@@ -232,6 +258,118 @@ def get_today_usage(db: Session = Depends(get_db)):
             }
         summary[iid]["total_used"] += abs(log.change_amount)
     return {"date": date.today().isoformat(), "usage": list(summary.values())}
+
+
+@router.get("/order-suggestions")
+def get_order_suggestions(db: Session = Depends(get_db)):
+    """
+    カテゴリ別発注提案。
+    - avg_daily_usage: 過去7日間の平均消費量/日
+    - days_remaining:  現在庫 / avg_daily_usage
+    - suggested_order: 7日分の必要量 - 現在庫（0以下は0）
+    - status: critical(残1日未満) / low(残3日未満) / ok
+    """
+    CATEGORY_ORDER = [
+        "野菜類", "肉類", "魚介類", "ドリンク類",
+        "乾燥物", "調味料品全般", "デザート材料類", "粉物類", "その他",
+    ]
+    CATEGORY_EMOJI = {
+        "野菜類": "🥦", "肉類": "🥩", "魚介類": "🐟", "ドリンク類": "🥤",
+        "乾燥物": "🌾", "調味料品全般": "🧂", "デザート材料類": "🍰",
+        "粉物類": "🌀", "その他": "📦",
+    }
+    TARGET_DAYS = 7  # 発注目標日数
+
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    ingredients = db.query(models.Ingredient).order_by(models.Ingredient.name).all()
+
+    items_by_cat: dict[str, list] = {c: [] for c in CATEGORY_ORDER}
+
+    for ing in ingredients:
+        cat = ing.category or "その他"
+        if cat not in items_by_cat:
+            items_by_cat[cat] = []
+
+        # 過去7日の消費ログを集計
+        consumed_logs = (
+            db.query(models.InventoryLog)
+            .filter(
+                models.InventoryLog.ingredient_id == ing.id,
+                models.InventoryLog.change_amount < 0,
+                models.InventoryLog.created_at >= week_ago,
+            )
+            .all()
+        )
+        total_consumed = sum(abs(l.change_amount) for l in consumed_logs)
+        avg_daily = round(total_consumed / 7, 2)
+
+        days_remaining: float | None = None
+        suggested_order: float = 0.0
+        if avg_daily > 0:
+            days_remaining = round(ing.current_stock / avg_daily, 1)
+            need = avg_daily * TARGET_DAYS - ing.current_stock
+            suggested_order = round(max(0.0, need), 2)
+        elif ing.min_stock_alert > 0 and ing.current_stock <= ing.min_stock_alert:
+            # 使用量データなしでもアラートなら補充提案
+            suggested_order = round(ing.min_stock_alert * 3, 2)
+
+        if days_remaining is None:
+            status = "no_data"
+        elif days_remaining < 1:
+            status = "critical"
+        elif days_remaining < 3:
+            status = "low"
+        else:
+            status = "ok"
+
+        # アラート以下でも status を強制 low に
+        if ing.min_stock_alert > 0 and ing.current_stock <= ing.min_stock_alert and status == "ok":
+            status = "low"
+
+        items_by_cat[cat].append({
+            "id": ing.id,
+            "name": ing.name,
+            "unit": ing.unit,
+            "current_stock": ing.current_stock,
+            "min_stock_alert": ing.min_stock_alert,
+            "avg_daily_usage": avg_daily,
+            "days_remaining": days_remaining,
+            "suggested_order": suggested_order,
+            "status": status,
+        })
+
+    categories = []
+    for cat in CATEGORY_ORDER:
+        items = items_by_cat.get(cat, [])
+        if not items:
+            continue
+        critical = sum(1 for i in items if i["status"] == "critical")
+        low      = sum(1 for i in items if i["status"] in ("critical", "low"))
+        ok       = sum(1 for i in items if i["status"] == "ok")
+        total    = len(items)
+        health_pct = round((ok / total) * 100) if total else 100
+        categories.append({
+            "category": cat,
+            "emoji": CATEGORY_EMOJI.get(cat, "📦"),
+            "total_items": total,
+            "critical_count": critical,
+            "alert_count": low,
+            "ok_count": ok,
+            "health_pct": health_pct,
+            "items": sorted(items, key=lambda x: (
+                0 if x["status"] == "critical" else
+                1 if x["status"] == "low" else
+                2 if x["status"] == "no_data" else 3
+            )),
+        })
+
+    total_order_items = sum(1 for cat in categories for i in cat["items"] if i["suggested_order"] > 0)
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "target_days": TARGET_DAYS,
+        "total_order_items": total_order_items,
+        "categories": categories,
+    }
 
 
 def deduct_stock_for_order(order_id: int, db: Session):
