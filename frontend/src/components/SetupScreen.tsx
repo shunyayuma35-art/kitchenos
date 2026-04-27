@@ -44,7 +44,7 @@ export default function SetupScreen({ onStart }: Props) {
               <div style={{ ...s.modeIconBg, background: "rgba(233,69,96,0.1)", border: "1px solid rgba(233,69,96,0.25)" }}>
                 <ChefIcon size={56} />
               </div>
-              <div style={s.modeName}>厨房スタッフ</div>
+              <div style={s.modeName}>ハピクルー</div>
               <div style={s.modeSub}>調理 · 盛付 · 仕込み · 管理</div>
               <div style={s.modeArrow}>→</div>
             </button>
@@ -53,7 +53,7 @@ export default function SetupScreen({ onStart }: Props) {
               <div style={{ ...s.modeIconBg, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)" }}>
                 <TableIcon size={56} />
               </div>
-              <div style={s.modeName}>テーブル端末</div>
+              <div style={s.modeName}>テーブルゲスト</div>
               <div style={s.modeSub}>お客様向け注文状況</div>
               <div style={s.modeArrow}>→</div>
             </button>
