@@ -34,8 +34,8 @@ export default function SetupScreen({ onStart }: Props) {
           {/* ロゴ */}
           <div style={s.logoWrap}>
             <div style={s.logoIcon}>🍳</div>
-            <h1 style={s.appName}>Kitchen<span style={s.appNameAccent}>AI</span></h1>
-            <p style={s.tagline}>KitchenOS — 厨房オペレーション自動化</p>
+            <h1 style={s.appName}>ハピハピ<span style={s.appNameAccent}>キッチン</span></h1>
+            <p style={s.tagline}>みんなの厨房を、もっと楽しく。</p>
           </div>
 
           {/* モード選択 */}
