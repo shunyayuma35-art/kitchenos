@@ -8,6 +8,20 @@ interface Props {
 
 const UNITS = ["g", "kg", "ml", "L", "個", "枚", "本", "袋", "缶", "パック"];
 
+const CATEGORIES: { key: string; label: string; emoji: string; color: string }[] = [
+  { key: "野菜類",       label: "野菜類",       emoji: "🥦", color: "#27ae60" },
+  { key: "肉類",         label: "肉類",         emoji: "🥩", color: "#e94560" },
+  { key: "魚介類",       label: "魚介類",       emoji: "🐟", color: "#3498db" },
+  { key: "ドリンク類",   label: "ドリンク類",   emoji: "🥤", color: "#9b59b6" },
+  { key: "乾燥物",       label: "乾燥物",       emoji: "🌾", color: "#e67e22" },
+  { key: "調味料品全般", label: "調味料品全般", emoji: "🧂", color: "#f39c12" },
+  { key: "デザート材料類", label: "デザート材料類", emoji: "🍰", color: "#e91e8c" },
+  { key: "粉物類",       label: "粉物類",       emoji: "🌀", color: "#7f8c8d" },
+  { key: "その他",       label: "その他",       emoji: "📦", color: "#546e7a" },
+];
+
+const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
+
 export default function InventoryManager({ language }: Props) {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +30,8 @@ export default function InventoryManager({ language }: Props) {
   const [logTarget, setLogTarget] = useState<Ingredient | null>(null);
   const [logs, setLogs] = useState<InventoryLog[]>([]);
   const [todayUsage, setTodayUsage] = useState<{ name: string; unit: string; total_used: number }[]>([]);
+  const [openCats, setOpenCats] = useState<Set<string>>(new Set(CATEGORIES.map((c) => c.key)));
+  const [filterCat, setFilterCat] = useState<string>("all");
 
   const fetchAll = useCallback(async () => {
     const [ingRes, usageRes] = await Promise.all([
@@ -42,6 +58,14 @@ export default function InventoryManager({ language }: Props) {
     if (!window.confirm("削除しますか？")) return;
     const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" });
     if (res.ok) setIngredients((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const toggleCat = (key: string) => {
+    setOpenCats((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
   };
 
   const alertCount = ingredients.filter(
@@ -106,15 +130,23 @@ export default function InventoryManager({ language }: Props) {
     );
   }
 
+  /* カテゴリ別グループ */
+  const grouped = CATEGORIES.map((cat) => ({
+    ...cat,
+    items: ingredients.filter((i) => (i.category || "その他") === cat.key),
+  })).filter((g) => g.items.length > 0 || filterCat === "all");
+
+  const displayGroups = filterCat === "all"
+    ? grouped.filter((g) => g.items.length > 0)
+    : grouped.filter((g) => g.key === filterCat);
+
   return (
     <div style={s.root}>
       {/* ヘッダー */}
       <div style={s.headerRow}>
         <h2 style={s.title}>
           📦 {t(language, "inventory")}
-          {alertCount > 0 && (
-            <span style={s.alertBadge}>⚠ {alertCount}</span>
-          )}
+          {alertCount > 0 && <span style={s.alertBadge}>⚠ {alertCount}</span>}
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn-secondary btn-small" onClick={fetchAll}>↻</button>
@@ -124,8 +156,40 @@ export default function InventoryManager({ language }: Props) {
         </div>
       </div>
 
+      {/* カテゴリフィルタータブ */}
+      <div style={s.catTabRow}>
+        <button
+          style={{ ...s.catTab, ...(filterCat === "all" ? s.catTabActive : {}) }}
+          onClick={() => setFilterCat("all")}
+        >
+          すべて
+        </button>
+        {CATEGORIES.map((cat) => {
+          const count = ingredients.filter((i) => (i.category || "その他") === cat.key).length;
+          if (count === 0) return null;
+          const alertInCat = ingredients.filter(
+            (i) => (i.category || "その他") === cat.key && i.min_stock_alert > 0 && i.current_stock <= i.min_stock_alert
+          ).length;
+          return (
+            <button
+              key={cat.key}
+              style={{
+                ...s.catTab,
+                ...(filterCat === cat.key ? { ...s.catTabActive, borderColor: cat.color, color: cat.color } : {}),
+              }}
+              onClick={() => setFilterCat(cat.key)}
+            >
+              {cat.emoji} {cat.label}
+              <span style={{ ...s.catCount, ...(alertInCat > 0 ? { background: "#e9456033", color: "#e94560" } : {}) }}>
+                {alertInCat > 0 ? `⚠${alertInCat}` : count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* 本日の使用量サマリー */}
-      {todayUsage.length > 0 && (
+      {todayUsage.length > 0 && filterCat === "all" && (
         <section style={s.section}>
           <h3 style={s.sectionTitle}>📊 {t(language, "todayUsage")}</h3>
           <div style={s.usageGrid}>
@@ -141,86 +205,115 @@ export default function InventoryManager({ language }: Props) {
         </section>
       )}
 
-      {/* 食材リスト */}
+      {/* カテゴリ別セクション */}
       {ingredients.length === 0 ? (
         <div style={s.empty}>{t(language, "noIngredients")}</div>
       ) : (
-        <div style={s.list}>
-          {ingredients.map((ing) => {
-            const isLow = ing.min_stock_alert > 0 && ing.current_stock <= ing.min_stock_alert;
-            const pct = ing.min_stock_alert > 0
-              ? Math.min(100, (ing.current_stock / (ing.min_stock_alert * 3)) * 100)
-              : null;
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {displayGroups.map((cat) => {
+            const isOpen = openCats.has(cat.key);
+            const catAlerts = cat.items.filter(
+              (i) => i.min_stock_alert > 0 && i.current_stock <= i.min_stock_alert
+            ).length;
             return (
-              <div
-                key={ing.id}
-                style={{
-                  ...s.card,
-                  borderColor: isLow ? "#e94560" : "#0f3460",
-                  boxShadow: isLow ? "0 0 12px #e9456033" : "none",
-                }}
-              >
-                {/* 名前・単位・アラートバッジ */}
-                <div style={s.cardTop}>
-                  <div>
-                    <span style={s.ingName}>{ing.name}</span>
-                    <span style={s.unitTag}>{ing.unit}</span>
-                    {isLow && (
-                      <span style={s.lowBadge}>⚠ {t(language, "stockLow")}</span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button style={s.iconBtn} onClick={() => openLogs(ing)} title="履歴">📋</button>
-                    <button style={s.iconBtn} onClick={() => setAdjustTarget(ing)} title="在庫調整">+/-</button>
-                    <button style={{ ...s.iconBtn, color: "#e94560" }} onClick={() => deleteIngredient(ing.id)}>🗑</button>
-                  </div>
-                </div>
-
-                {/* 在庫量 */}
-                <div style={s.stockRow}>
-                  <span style={{ ...s.stockNum, color: isLow ? "#e94560" : "#27ae60" }}>
-                    {ing.current_stock}{ing.unit}
-                  </span>
-                  {ing.min_stock_alert > 0 && (
-                    <span style={{ color: "#a0a0b0", fontSize: "0.8rem" }}>
-                      / アラート: {ing.min_stock_alert}{ing.unit}
+              <div key={cat.key} style={{ ...s.catSection, borderColor: cat.color + "44" }}>
+                {/* セクションヘッダー */}
+                <button
+                  style={{ ...s.catHeader, borderBottomColor: isOpen ? cat.color + "33" : "transparent" }}
+                  onClick={() => toggleCat(cat.key)}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: "1.4rem" }}>{cat.emoji}</span>
+                    <span style={{ fontWeight: 800, fontSize: "1rem", color: cat.color }}>{cat.label}</span>
+                    <span style={{ color: "#555570", fontSize: "0.85rem", fontWeight: 600 }}>
+                      {cat.items.length}品目
                     </span>
-                  )}
-                </div>
+                    {catAlerts > 0 && (
+                      <span style={s.alertBadge}>⚠ {catAlerts}</span>
+                    )}
+                  </span>
+                  <span style={{ color: "#555570", fontSize: "0.9rem", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    ▼
+                  </span>
+                </button>
 
-                {/* 在庫バー */}
-                {pct !== null && (
-                  <div style={s.barTrack}>
-                    <div style={{
-                      ...s.barFill,
-                      width: `${pct}%`,
-                      background: isLow ? "#e94560" : pct < 50 ? "#f39c12" : "#27ae60",
-                    }} />
+                {/* 食材カード一覧 */}
+                {isOpen && (
+                  <div style={s.catBody}>
+                    {cat.items.map((ing) => {
+                      const isLow = ing.min_stock_alert > 0 && ing.current_stock <= ing.min_stock_alert;
+                      const pct = ing.min_stock_alert > 0
+                        ? Math.min(100, (ing.current_stock / (ing.min_stock_alert * 3)) * 100)
+                        : null;
+                      return (
+                        <div
+                          key={ing.id}
+                          style={{
+                            ...s.card,
+                            borderColor: isLow ? "#e94560" : cat.color + "55",
+                            boxShadow: isLow ? "0 0 12px #e9456033" : "none",
+                          }}
+                        >
+                          <div style={s.cardTop}>
+                            <div>
+                              <span style={s.ingName}>{ing.name}</span>
+                              <span style={{ ...s.unitTag, background: cat.color + "22", color: cat.color }}>{ing.unit}</span>
+                              {isLow && <span style={s.lowBadge}>⚠ {t(language, "stockLow")}</span>}
+                            </div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button style={s.iconBtn} onClick={() => openLogs(ing)} title="履歴">📋</button>
+                              <button style={s.iconBtn} onClick={() => setAdjustTarget(ing)} title="在庫調整">+/-</button>
+                              <button style={{ ...s.iconBtn, color: "#e94560" }} onClick={() => deleteIngredient(ing.id)}>🗑</button>
+                            </div>
+                          </div>
+
+                          <div style={s.stockRow}>
+                            <span style={{ ...s.stockNum, color: isLow ? "#e94560" : cat.color }}>
+                              {ing.current_stock}{ing.unit}
+                            </span>
+                            {ing.min_stock_alert > 0 && (
+                              <span style={{ color: "#a0a0b0", fontSize: "0.8rem" }}>
+                                / アラート: {ing.min_stock_alert}{ing.unit}
+                              </span>
+                            )}
+                          </div>
+
+                          {pct !== null && (
+                            <div style={s.barTrack}>
+                              <div style={{
+                                ...s.barFill,
+                                width: `${pct}%`,
+                                background: isLow ? "#e94560" : pct < 50 ? "#f39c12" : cat.color,
+                              }} />
+                            </div>
+                          )}
+
+                          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                            {[10, 50, 100, 500].map((amt) => (
+                              <button
+                                key={amt}
+                                style={{ ...s.quickBtn, color: cat.color, borderColor: cat.color + "44", background: cat.color + "11" }}
+                                onClick={async () => {
+                                  const res = await fetch(`/api/inventory/${ing.id}/adjust`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ amount: amt, reason: "入荷" }),
+                                  });
+                                  if (res.ok) {
+                                    const updated: Ingredient = await res.json();
+                                    setIngredients((prev) => prev.map((i) => i.id === updated.id ? updated : i));
+                                  }
+                                }}
+                              >
+                                +{amt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-
-                {/* 入荷ボタン（クイック） */}
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                  {[10, 50, 100, 500].map((amt) => (
-                    <button
-                      key={amt}
-                      style={s.quickBtn}
-                      onClick={async () => {
-                        const res = await fetch(`/api/inventory/${ing.id}/adjust`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ amount: amt, reason: "入荷" }),
-                        });
-                        if (res.ok) {
-                          const updated: Ingredient = await res.json();
-                          setIngredients((prev) => prev.map((i) => i.id === updated.id ? updated : i));
-                        }
-                      }}
-                    >
-                      +{amt}
-                    </button>
-                  ))}
-                </div>
               </div>
             );
           })}
@@ -242,6 +335,8 @@ function AdjustForm({ ingredient, language, onDone, onCancel }: {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const cat = CAT_MAP[ingredient.category] ?? CAT_MAP["その他"];
+
   const handleSubmit = async () => {
     const n = parseFloat(amount);
     if (!n || n <= 0) return;
@@ -260,7 +355,12 @@ function AdjustForm({ ingredient, language, onDone, onCancel }: {
   return (
     <div style={s.root}>
       <div style={s.headerRow}>
-        <h2 style={s.title}>📦 {ingredient.name} — 在庫調整</h2>
+        <h2 style={s.title}>
+          {cat.emoji} {ingredient.name} — 在庫調整
+          <span style={{ ...s.unitTag, background: cat.color + "22", color: cat.color, marginLeft: 8 }}>
+            {cat.label}
+          </span>
+        </h2>
         <button className="btn-secondary btn-small" onClick={onCancel}>{t(language, "cancel")}</button>
       </div>
 
@@ -269,7 +369,6 @@ function AdjustForm({ ingredient, language, onDone, onCancel }: {
           {t(language, "currentStock")}: <strong style={{ color: "#eaeaea" }}>{ingredient.current_stock}{ingredient.unit}</strong>
         </div>
 
-        {/* モード選択 */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {(["restock", "dispose", "adjust"] as const).map((m) => (
             <button
@@ -328,7 +427,10 @@ function IngredientForm({ language, onSaved, onCancel }: {
   const [unit, setUnit] = useState("g");
   const [stock, setStock] = useState("");
   const [minAlert, setMinAlert] = useState("");
+  const [category, setCategory] = useState("その他");
   const [submitting, setSubmitting] = useState(false);
+
+  const selectedCat = CAT_MAP[category] ?? CAT_MAP["その他"];
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -341,6 +443,7 @@ function IngredientForm({ language, onSaved, onCancel }: {
         unit,
         current_stock: parseFloat(stock) || 0,
         min_stock_alert: parseFloat(minAlert) || 0,
+        category,
       }),
     });
     if (res.ok) onSaved(await res.json());
@@ -355,9 +458,37 @@ function IngredientForm({ language, onSaved, onCancel }: {
       </div>
 
       <div style={s.adjustCard}>
+        {/* カテゴリ選択 */}
+        <div style={s.formRow}>
+          <label style={s.label}>カテゴリ</label>
+          <div style={s.catSelectGrid}>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                style={{
+                  ...s.catSelectBtn,
+                  borderColor: category === cat.key ? cat.color : "rgba(255,255,255,0.08)",
+                  background: category === cat.key ? cat.color + "22" : "transparent",
+                  color: category === cat.key ? cat.color : "#a0a0b0",
+                }}
+                onClick={() => setCategory(cat.key)}
+              >
+                <span style={{ fontSize: "1.2rem" }}>{cat.emoji}</span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div style={s.formRow}>
           <label style={s.label}>{t(language, "ingredientName")}</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例: 豚肉" style={s.input} autoFocus />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={`例: ${selectedCat.emoji} キャベツ`}
+            style={s.input}
+            autoFocus
+          />
         </div>
         <div style={s.formRow}>
           <label style={s.label}>{t(language, "unit")}</label>
@@ -365,15 +496,22 @@ function IngredientForm({ language, onSaved, onCancel }: {
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
-        <div style={s.formRow}>
-          <label style={s.label}>{t(language, "currentStock")}</label>
-          <input type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" style={s.input} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={s.formRow}>
+            <label style={s.label}>{t(language, "currentStock")}</label>
+            <input type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" style={s.input} />
+          </div>
+          <div style={s.formRow}>
+            <label style={s.label}>{t(language, "minStockAlert")}</label>
+            <input type="number" min={0} value={minAlert} onChange={(e) => setMinAlert(e.target.value)} placeholder="0" style={s.input} />
+          </div>
         </div>
-        <div style={s.formRow}>
-          <label style={s.label}>{t(language, "minStockAlert")} （この量を下回るとアラート）</label>
-          <input type="number" min={0} value={minAlert} onChange={(e) => setMinAlert(e.target.value)} placeholder="0" style={s.input} />
-        </div>
-        <button className="btn-primary" style={{ width: "100%", marginTop: 8 }} disabled={submitting || !name.trim()} onClick={handleSubmit}>
+        <button
+          className="btn-primary"
+          style={{ width: "100%", marginTop: 8 }}
+          disabled={submitting || !name.trim()}
+          onClick={handleSubmit}
+        >
           {submitting ? "登録中..." : t(language, "submit")}
         </button>
       </div>
@@ -383,25 +521,55 @@ function IngredientForm({ language, onSaved, onCancel }: {
 
 const s: Record<string, React.CSSProperties> = {
   root: { padding: "0 0 32px" },
-  headerRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  headerRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   title: { fontSize: "1.3rem", fontWeight: 700, color: "#eaeaea", display: "flex", alignItems: "center", gap: 10 },
   alertBadge: {
     background: "#e9456033", color: "#e94560",
     borderRadius: 999, padding: "2px 10px", fontSize: "0.8rem", fontWeight: 700,
   },
-  section: { marginBottom: 24 },
+  catTabRow: {
+    display: "flex", gap: 6, flexWrap: "wrap" as const, marginBottom: 20,
+  },
+  catTab: {
+    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+    color: "#a0a0b0", borderRadius: 20, padding: "6px 14px",
+    cursor: "pointer", fontSize: "0.82rem", fontWeight: 600,
+    display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
+  },
+  catTabActive: {
+    background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.3)", color: "#eaeaea",
+  },
+  catCount: {
+    background: "rgba(255,255,255,0.1)", color: "#a0a0b0",
+    borderRadius: 999, padding: "1px 7px", fontSize: "0.75rem", fontWeight: 700,
+  },
+  section: { marginBottom: 20 },
   sectionTitle: { fontSize: "0.95rem", fontWeight: 700, color: "#eaeaea", marginBottom: 10 },
   usageGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 },
   usageCard: { background: "#16213e", borderRadius: 10, padding: "12px", border: "1px solid #e9456033" },
-  list: { display: "flex", flexDirection: "column", gap: 12 },
-  card: {
-    background: "#1a1a2e", borderRadius: 14, padding: 16,
-    border: "2px solid", transition: "box-shadow 0.2s",
+  catSection: {
+    background: "rgba(255,255,255,0.02)", borderRadius: 14,
+    border: "1px solid", overflow: "hidden",
   },
-  cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 },
-  ingName: { fontWeight: 700, fontSize: "1.05rem", color: "#eaeaea" },
+  catHeader: {
+    width: "100%", background: "rgba(255,255,255,0.03)",
+    border: "none", borderBottom: "1px solid",
+    padding: "14px 16px", cursor: "pointer",
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    transition: "background 0.15s",
+  },
+  catBody: {
+    padding: "12px 16px",
+    display: "flex", flexDirection: "column" as const, gap: 10,
+  },
+  card: {
+    background: "#1a1a2e", borderRadius: 12, padding: 14,
+    border: "1.5px solid", transition: "box-shadow 0.2s",
+  },
+  cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
+  ingName: { fontWeight: 700, fontSize: "1rem", color: "#eaeaea" },
   unitTag: {
-    marginLeft: 8, background: "#0f3460", color: "#7fb3ff",
+    marginLeft: 8,
     padding: "2px 8px", borderRadius: 6, fontSize: "0.78rem", fontWeight: 700,
   },
   lowBadge: {
@@ -409,12 +577,11 @@ const s: Record<string, React.CSSProperties> = {
     padding: "2px 8px", borderRadius: 6, fontSize: "0.78rem", fontWeight: 700,
   },
   stockRow: { display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 },
-  stockNum: { fontSize: "1.8rem", fontWeight: 800, lineHeight: 1 },
-  barTrack: { height: 6, background: "#0f0f1a", borderRadius: 99, overflow: "hidden", marginBottom: 4 },
+  stockNum: { fontSize: "1.7rem", fontWeight: 800, lineHeight: 1 },
+  barTrack: { height: 5, background: "#0f0f1a", borderRadius: 99, overflow: "hidden", marginBottom: 4 },
   barFill: { height: "100%", borderRadius: 99, transition: "width 0.5s" },
   quickBtn: {
-    background: "#27ae6022", color: "#27ae60",
-    border: "1px solid #27ae6044", borderRadius: 8,
+    border: "1px solid", borderRadius: 8,
     padding: "6px 10px", cursor: "pointer", fontSize: "0.82rem", fontWeight: 700,
   },
   iconBtn: {
@@ -428,7 +595,7 @@ const s: Record<string, React.CSSProperties> = {
     border: "1px solid",
   },
   logReason: { color: "#a0a0b0", fontSize: "0.85rem" },
-  adjustCard: { background: "#16213e", borderRadius: 14, padding: 24, maxWidth: 500 },
+  adjustCard: { background: "#16213e", borderRadius: 14, padding: 24, maxWidth: 520 },
   formRow: { marginBottom: 16 },
   label: { display: "block", fontSize: "0.85rem", color: "#a0a0b0", marginBottom: 6, fontWeight: 600 },
   input: {
@@ -442,6 +609,14 @@ const s: Record<string, React.CSSProperties> = {
     cursor: "pointer", fontSize: "0.85rem", fontWeight: 700,
   },
   modeBtnActive: { borderColor: "#7fb3ff", color: "#7fb3ff", background: "#7fb3ff11" },
+  catSelectGrid: {
+    display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8,
+  },
+  catSelectBtn: {
+    border: "1.5px solid", borderRadius: 10, padding: "10px 6px",
+    cursor: "pointer", display: "flex", flexDirection: "column" as const,
+    alignItems: "center", gap: 4, transition: "all 0.15s",
+  },
   center: { textAlign: "center", padding: 60, color: "#a0a0b0" },
   empty: { textAlign: "center", padding: 40, color: "#555570" },
 };

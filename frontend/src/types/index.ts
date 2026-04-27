@@ -51,6 +51,7 @@ export interface Ingredient {
   unit: string;
   current_stock: number;
   min_stock_alert: number;
+  category: string;
   created_at: string;
   updated_at: string;
 }

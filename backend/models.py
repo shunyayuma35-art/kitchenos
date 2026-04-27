@@ -164,6 +164,7 @@ class Ingredient(Base):
     unit = Column(String, nullable=False, default="g")  # g / ml / 個 / 枚 / etc
     current_stock = Column(Float, default=0.0)        # 現在庫量
     min_stock_alert = Column(Float, default=0.0)      # この量を下回ったらアラート
+    category = Column(String, nullable=True, default="その他")  # 野菜類/肉類/魚介類 etc
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -192,6 +192,7 @@ class IngredientCreate(BaseModel):
     unit: str = "g"
     current_stock: float = 0.0
     min_stock_alert: float = 0.0
+    category: str = "その他"
 
 
 class IngredientUpdate(BaseModel):
@@ -199,6 +200,7 @@ class IngredientUpdate(BaseModel):
     unit: Optional[str] = None
     current_stock: Optional[float] = None
     min_stock_alert: Optional[float] = None
+    category: Optional[str] = None
 
 
 class IngredientOut(BaseModel):
@@ -207,6 +209,7 @@ class IngredientOut(BaseModel):
     unit: str
     current_stock: float
     min_stock_alert: float
+    category: str = "その他"
     created_at: datetime
     updated_at: datetime
 
