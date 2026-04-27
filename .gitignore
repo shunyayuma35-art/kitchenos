@@ -1,0 +1,45 @@
+# ── Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+*.so
+
+# ── データベース（本番は Railway の永続ボリュームを使う）────
+backend/kitchen.db
+backend/*.db
+
+# ── アップロード画像（本番は S3 等へ移行する）──────────────
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ── ログ ──────────────────────────────────────────────────
+backend/*.log
+*.log
+
+# ── Node / フロントエンド ──────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ── 環境変数 ──────────────────────────────────────────────
+.env
+.env.local
+.env.production
+
+# ── エディタ ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Claude Code ───────────────────────────────────────────
+.claude/
