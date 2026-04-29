@@ -27,6 +27,8 @@ class Menu(Base):
     name = Column(String, nullable=False)
     category = Column(String, nullable=True)        # 例: 鍋物・定食・惣菜
     is_active = Column(Boolean, default=True)
+    timing_config = Column(String, nullable=True)   # JSON: {rice_before:60, miso_before:60, side_before:30, ...}
+    allergens = Column(String, nullable=True)        # JSON: {egg:true, milk:false, wheat:null, ...}
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -100,6 +102,7 @@ class Task(Base):
     estimated_time_seconds = Column(Integer, nullable=True)   # 目安時間(秒)
     auto_next = Column(Boolean, default=False)        # タイマー完了時に自動進行
     required_checklist = Column(String, nullable=True)        # JSON配列: ["確認1","確認2"]
+    image_url = Column(String, nullable=True)          # レシピ写真URL
 
     order_item = relationship("OrderItem", back_populates="tasks")
     completion_log = relationship("CompletionLog", back_populates="task", uselist=False)
@@ -165,6 +168,7 @@ class Ingredient(Base):
     current_stock = Column(Float, default=0.0)        # 現在庫量
     min_stock_alert = Column(Float, default=0.0)      # この量を下回ったらアラート
     category = Column(String, nullable=True, default="その他")  # 野菜類/肉類/魚介類 etc
+    allergens = Column(String, nullable=True)        # JSON: {egg:true, wheat:false, ...}
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

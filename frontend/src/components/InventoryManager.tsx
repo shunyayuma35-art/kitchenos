@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Ingredient, InventoryLog, Language } from "../types";
 import { t } from "../i18n/translations";
+import {
+  MANDATORY_ALLERGENS, RECOMMENDED_ALLERGENS,
+  ALLERGEN_NAMES, emptyAllergenMap,
+  type AllergenKey, type AllergenMap,
+} from "../i18n/allergens";
 
 interface OrderItem {
   id: number;
@@ -39,15 +44,17 @@ interface Props {
 const UNITS = ["g", "kg", "ml", "L", "個", "枚", "本", "袋", "缶", "パック"];
 
 const CATEGORIES: { key: string; label: string; emoji: string; color: string }[] = [
-  { key: "野菜類",       label: "野菜類",       emoji: "🥦", color: "#27ae60" },
-  { key: "肉類",         label: "肉類",         emoji: "🥩", color: "#e94560" },
-  { key: "魚介類",       label: "魚介類",       emoji: "🐟", color: "#3498db" },
-  { key: "ドリンク類",   label: "ドリンク類",   emoji: "🥤", color: "#9b59b6" },
-  { key: "乾燥物",       label: "乾燥物",       emoji: "🌾", color: "#e67e22" },
-  { key: "調味料品全般", label: "調味料品全般", emoji: "🧂", color: "#f39c12" },
+  { key: "野菜類",         label: "野菜類",         emoji: "🥦", color: "#27ae60" },
+  { key: "肉類",           label: "肉類",           emoji: "🥩", color: "#e94560" },
+  { key: "魚介類",         label: "魚介類",         emoji: "🐟", color: "#3498db" },
+  { key: "ドリンク類",     label: "ドリンク類",     emoji: "🥤", color: "#9b59b6" },
+  { key: "乾燥物",         label: "乾燥物",         emoji: "🌾", color: "#e67e22" },
+  { key: "調味料品全般",   label: "調味料品全般",   emoji: "🧂", color: "#f39c12" },
   { key: "デザート材料類", label: "デザート材料類", emoji: "🍰", color: "#e91e8c" },
-  { key: "粉物類",       label: "粉物類",       emoji: "🌀", color: "#7f8c8d" },
-  { key: "その他",       label: "その他",       emoji: "📦", color: "#546e7a" },
+  { key: "粉物類",         label: "粉物類",         emoji: "🌀", color: "#7f8c8d" },
+  { key: "スパイス",       label: "スパイス",       emoji: "🌶️", color: "#c0392b" },
+  { key: "揚げ物",         label: "揚げ物",         emoji: "🍟", color: "#d4a017" },
+  { key: "その他",         label: "その他",         emoji: "📦", color: "#546e7a" },
 ];
 
 const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
@@ -66,6 +73,7 @@ export default function InventoryManager({ language }: Props) {
   const [orderData, setOrderData] = useState<OrderSuggestions | null>(null);
   const [orderLoading, setOrderLoading] = useState(false);
   const [invFlash, setInvFlash] = useState<string | null>(null);
+  const [allergenTarget, setAllergenTarget] = useState<Ingredient | null>(null);
 
   const fetchAll = useCallback(async () => {
     const [ingRes, usageRes] = await Promise.all([
@@ -187,6 +195,19 @@ export default function InventoryManager({ language }: Props) {
           setShowForm(false);
         }}
         onCancel={() => setShowForm(false)}
+      />
+    );
+  }
+
+  if (allergenTarget) {
+    return (
+      <IngredientAllergenEditor
+        ingredient={allergenTarget}
+        onDone={(updated) => {
+          setIngredients((prev) => prev.map((i) => i.id === updated.id ? updated : i));
+          setAllergenTarget(null);
+        }}
+        onCancel={() => setAllergenTarget(null)}
       />
     );
   }
@@ -358,11 +379,14 @@ export default function InventoryManager({ language }: Props) {
                               {isLow && <span style={s.lowBadge}>⚠ {t(language, "stockLow")}</span>}
                             </div>
                             <div style={{ display: "flex", gap: 6 }}>
+                              <button style={{ ...s.iconBtn, color: "#c0392b" }} onClick={() => setAllergenTarget(ing)} title="アレルゲン設定">🥜</button>
                               <button style={s.iconBtn} onClick={() => openLogs(ing)} title="履歴">📋</button>
                               <button style={s.iconBtn} onClick={() => setAdjustTarget(ing)} title="在庫調整">+/-</button>
                               <button style={{ ...s.iconBtn, color: "#e94560" }} onClick={() => deleteIngredient(ing.id)}>🗑</button>
                             </div>
                           </div>
+                          {/* アレルゲンバッジ表示 */}
+                          <IngAllergenBadges allergenJson={ing.allergens ?? null} />
 
                           <div style={s.stockRow}>
                             <span style={{ ...s.stockNum, color: isLow ? "#e94560" : cat.color }}>
@@ -417,6 +441,173 @@ export default function InventoryManager({ language }: Props) {
         </div>
       )}
       </>)}
+    </div>
+  );
+}
+
+// ── 食材アレルゲンバッジ（コンパクト表示） ───────────────────────
+function IngAllergenBadges({ allergenJson }: { allergenJson: string | null }) {
+  if (!allergenJson) return null;
+  let map: Record<string, boolean | null>;
+  try { map = JSON.parse(allergenJson); } catch { return null; }
+
+  const mandatoryPresent = MANDATORY_ALLERGENS.filter((k) => map[k] === true);
+  const recommendedPresent = RECOMMENDED_ALLERGENS.filter((k) => map[k] === true);
+  if (mandatoryPresent.length === 0 && recommendedPresent.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginTop: 6 }}>
+      {mandatoryPresent.map((k) => (
+        <span key={k} style={{
+          fontSize: "0.7rem", padding: "2px 6px", borderRadius: 4,
+          background: "rgba(192,57,43,0.12)", color: "#c0392b",
+          border: "1px solid rgba(192,57,43,0.3)", fontWeight: 700,
+        }}>{ALLERGEN_NAMES[k]?.ja ?? k}</span>
+      ))}
+      {recommendedPresent.map((k) => (
+        <span key={k} style={{
+          fontSize: "0.7rem", padding: "2px 6px", borderRadius: 4,
+          background: "rgba(214,137,16,0.10)", color: "#d68910",
+          border: "1px solid rgba(214,137,16,0.25)", fontWeight: 600,
+        }}>{ALLERGEN_NAMES[k]?.ja ?? k}</span>
+      ))}
+    </div>
+  );
+}
+
+// ── 食材アレルゲン編集エディタ ───────────────────────────────
+function IngredientAllergenEditor({
+  ingredient,
+  onDone,
+  onCancel,
+}: {
+  ingredient: Ingredient;
+  onDone: (updated: Ingredient) => void;
+  onCancel: () => void;
+}) {
+  const [allergenMap, setAllergenMap] = useState<AllergenMap>(() => {
+    if (ingredient.allergens) {
+      try { return { ...emptyAllergenMap(), ...JSON.parse(ingredient.allergens) } as AllergenMap; }
+      catch { /* ignore */ }
+    }
+    return emptyAllergenMap();
+  });
+  const [guessing, setGuessing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleGuess = async () => {
+    setGuessing(true);
+    try {
+      const res = await fetch("/api/allergens/guess-ingredient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menu_name: ingredient.name }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newMap = { ...allergenMap };
+        for (const key of Object.keys(data.allergens) as AllergenKey[]) {
+          if (data.allergens[key] === true) newMap[key] = true;
+          else if (newMap[key] === null) newMap[key] = null;
+        }
+        setAllergenMap(newMap);
+      }
+    } catch { /* ignore */ }
+    finally { setGuessing(false); }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/allergens/ingredients/${ingredient.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allergens: allergenMap }),
+      });
+      if (res.ok) {
+        onDone({ ...ingredient, allergens: JSON.stringify(allergenMap) });
+      }
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  };
+
+  const cycle = (key: AllergenKey) => {
+    const v = allergenMap[key];
+    setAllergenMap((prev) => ({
+      ...prev,
+      [key]: v === null ? true : v === true ? false : null,
+    }));
+  };
+
+  const renderGroup = (keys: AllergenKey[], label: string, dotColor: string) => (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: "0.78rem", fontWeight: 700, color: dotColor, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
+        {keys.map((k) => {
+          const v = allergenMap[k];
+          const icon = v === true ? "✅" : v === false ? "❌" : "❓";
+          return (
+            <button
+              key={k}
+              onClick={() => cycle(k)}
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "4px 9px", borderRadius: 7, cursor: "pointer",
+                border: `1.5px solid ${v === true ? dotColor : v === false ? "#27ae6055" : "rgba(200,180,160,0.3)"}`,
+                background: v === true ? dotColor + "18" : "rgba(255,252,248,0.9)",
+                fontSize: "0.8rem", fontWeight: v === true ? 700 : 400,
+                color: v === true ? "#2d1a0e" : "#6a5a4a",
+              }}
+            >
+              <span>{icon}</span>
+              <span>{ALLERGEN_NAMES[k]?.ja ?? k}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "0 0 24px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#2d2013" }}>
+          🥜 {ingredient.name} — アレルゲン設定
+        </h2>
+        <button className="btn-secondary btn-small" onClick={onCancel}>← 戻る</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <button
+          className="btn-secondary btn-small"
+          onClick={handleGuess}
+          disabled={guessing}
+          style={{ background: "rgba(90,125,175,0.12)", color: "#3a6daf" }}
+        >
+          {guessing ? "推定中..." : "✨ 食材名から自動推定"}
+        </button>
+        <span style={{ fontSize: "0.78rem", color: "#8c6f5a", alignSelf: "center" }}>
+          クリックで ❓未調査 → ✅含む → ❌含まない → ❓ と切替
+        </span>
+      </div>
+
+      <div style={{
+        background: "rgba(255,255,255,0.92)", borderRadius: 14,
+        padding: 20, border: "1px solid rgba(220,190,160,0.22)",
+      }}>
+        {renderGroup(MANDATORY_ALLERGENS, "🔴 義務表示（8品目）", "#c0392b")}
+        {renderGroup(RECOMMENDED_ALLERGENS, "🟡 推奨表示（20品目）", "#d68910")}
+        {renderGroup(["pistachio" as AllergenKey], "⚪ 将来追加候補", "#7f8c8d")}
+      </div>
+
+      <button
+        className="btn-primary"
+        style={{ width: "100%", marginTop: 16 }}
+        disabled={saving}
+        onClick={handleSave}
+      >
+        {saving ? "保存中..." : "💾 アレルゲン情報を保存"}
+      </button>
     </div>
   );
 }

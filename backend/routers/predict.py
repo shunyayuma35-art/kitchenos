@@ -192,29 +192,42 @@ async def predict_timing(
             ))
 
     # サイドメニュー開始タイミングの計算
-    # メインの調理完了予測時刻を基準に逆算
+    # メニュー別 timing_config を優先、なければデフォルト値を使用
+    import json as _json
+
+    # 注文のメニュー名からタイミング設定を取得（複数メニューなら最大値を採用）
+    timing_cfg: dict = {}
+    for item in order.items:
+        menu_obj = db.query(models.Menu).filter(models.Menu.name == item.menu_name).first()
+        if menu_obj and menu_obj.timing_config:
+            try:
+                cfg = _json.loads(menu_obj.timing_config)
+                # より長い方（安全側）を採用
+                for k, v in cfg.items():
+                    if isinstance(v, (int, float)):
+                        timing_cfg[k] = max(timing_cfg.get(k, 0), v)
+            except Exception:
+                pass
+
+    # デフォルト値（timing_config がない場合）
+    RICE_BEFORE  = timing_cfg.get("rice_before_seconds",  60)    # ご飯: 1分前
+    MISO_BEFORE  = timing_cfg.get("miso_before_seconds",  60)    # 味噌汁: 1分前
+    SIDE_BEFORE  = timing_cfg.get("side_before_seconds",  30)    # サイド: 30秒前
+    SALAD_BEFORE = timing_cfg.get("salad_before_seconds", 60)    # サラダ: 1分前
+    DRINK_BEFORE = timing_cfg.get("drink_before_seconds", 60)    # ドリンク: 1分前
+
     main_tasks = [t for t in task_infos if t.task_type == "調理"]
     side_timings: List[schemas.SideDishTiming] = []
     if main_tasks:
-        # 最後に完了予定の調理タスクを基準にする
         pending_main = [t for t in main_tasks if t.status != "completed"]
-        if pending_main:
-            max_main_remaining = max(t.estimated_remaining_seconds for t in pending_main)
-        else:
-            max_main_remaining = 0
+        max_main_remaining = max(t.estimated_remaining_seconds for t in pending_main) if pending_main else 0
 
-        # サイドメニューの標準所要時間（DB履歴があれば使用）
-        rice_avg = _get_station_avg(db, "cooking", "ご飯") or 300    # 5分
-        soup_avg = _get_station_avg(db, "cooking", "味噌汁") or 180  # 3分
-        side_avg = _get_station_avg(db, "cooking") or 240             # 4分
-        drink_avg = 60                                                  # 1分
-
-        def _make_timing(item_type: str, duration: float, label_ja: str) -> schemas.SideDishTiming:
-            start_offset = max(0, int(max_main_remaining - duration - SIDE_DISH_BUFFER_SECONDS))
+        def _make_timing(item_type: str, before_seconds: int, label_ja: str) -> schemas.SideDishTiming:
+            start_offset = max(0, int(max_main_remaining - before_seconds))
             if start_offset <= 0:
                 reason = f"今すぐ{label_ja}を開始（メイン完成まで{max_main_remaining}秒）"
             else:
-                reason = f"{start_offset}秒後に{label_ja}を開始（メイン{SIDE_DISH_BUFFER_SECONDS}秒前）"
+                reason = f"{start_offset}秒後に{label_ja}を開始（メイン完成{before_seconds}秒前）"
             return schemas.SideDishTiming(
                 item_type=item_type,
                 start_in_seconds=start_offset,
@@ -222,10 +235,11 @@ async def predict_timing(
             )
 
         side_timings = [
-            _make_timing("rice", rice_avg, "ライス"),
-            _make_timing("soup", soup_avg, "スープ"),
-            _make_timing("side", side_avg, "サイドメニュー"),
-            _make_timing("drink", drink_avg, "ドリンク"),
+            _make_timing("rice",  RICE_BEFORE,  "ライス"),
+            _make_timing("soup",  MISO_BEFORE,  "味噌汁"),
+            _make_timing("side",  SIDE_BEFORE,  "サイドメニュー"),
+            _make_timing("salad", SALAD_BEFORE, "サラダ"),
+            _make_timing("drink", DRINK_BEFORE, "ドリンク"),
         ]
 
     # ステーション負荷レベル変換

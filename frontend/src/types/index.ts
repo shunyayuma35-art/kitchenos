@@ -13,14 +13,19 @@ export interface MenuStep {
   image_url: string | null;
   estimated_time_seconds: number | null;
   auto_next: boolean;
-  required_checklist: string | null;  // JSON array string
+  required_checklist: string | null;
 }
+
+// ─── Task (image_url付き) ───────────────────────────────
+// Task interface には image_url が追加された（以下の Task interface に含まれる）
 
 export interface Menu {
   id: number;
   name: string;
   category: string | null;
   is_active: boolean;
+  timing_config: string | null;
+  allergens: string | null;   // JSON: {egg:true, milk:false, wheat:null, ...}
   created_at: string;
   steps: MenuStep[];
 }
@@ -41,7 +46,8 @@ export interface Task {
   created_at: string;
   estimated_time_seconds: number | null;
   auto_next: boolean;
-  required_checklist: string | null;  // JSON array string
+  required_checklist: string | null;
+  image_url: string | null;           // レシピ写真URL
 }
 
 // ─── Inventory ────────────────────────────────────────
@@ -52,6 +58,7 @@ export interface Ingredient {
   current_stock: number;
   min_stock_alert: number;
   category: string;
+  allergens: string | null;   // JSON: {egg:true, milk:false, ...}
   created_at: string;
   updated_at: string;
 }

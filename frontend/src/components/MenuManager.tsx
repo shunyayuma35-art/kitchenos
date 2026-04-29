@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Menu, MenuStep, Ingredient, MenuIngredient, Language } from "../types";
 import { t } from "../i18n/translations";
+import {
+  ALL_ALLERGENS, MANDATORY_ALLERGENS, RECOMMENDED_ALLERGENS,
+  ALLERGEN_NAMES, ALLERGEN_LANG_NAMES,
+  emptyAllergenMap,
+  type AllergenKey, type AllergenMap, type AllergenLang,
+} from "../i18n/allergens";
 
 interface Props {
   language: Language;
@@ -160,6 +166,9 @@ export default function MenuManager({ language }: Props) {
                   <StepChip key={step.id} step={step} />
                 ))}
               </div>
+
+              {/* 義務アレルゲンバッジ */}
+              <AllergenBadges allergenJson={menu.allergens ?? null} />
             </div>
           ))}
         </div>
@@ -214,6 +223,7 @@ interface StepDraft {
   estimated_time_seconds: number | "";
   auto_next: boolean;
   required_checklist: string;  // comma-separated → JSON array on submit
+  image_url: string | null;    // レシピ写真URL
 }
 
 function MenuForm({ menu, language, onSaved, onCancel }: FormProps) {
@@ -229,19 +239,66 @@ function MenuForm({ menu, language, onSaved, onCancel }: FormProps) {
       required_checklist: s.required_checklist
         ? (() => { try { return (JSON.parse(s.required_checklist!) as string[]).join(", "); } catch { return s.required_checklist ?? ""; } })()
         : "",
+      image_url: s.image_url ?? null,
     })) ?? [
-      { step: 1, task_type: "仕込み", description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "" },
-      { step: 2, task_type: "調理", description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "" },
-      { step: 3, task_type: "盛付", description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "" },
+      { step: 1, task_type: "仕込み", description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "", image_url: null },
+      { step: 2, task_type: "調理",   description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "", image_url: null },
+      { step: 3, task_type: "盛付",   description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "", image_url: null },
     ]
   );
+
+  // アレルゲン状態
+  const [allergenMap, setAllergenMap] = useState<AllergenMap>(() => {
+    if (menu?.allergens) {
+      try {
+        const parsed = JSON.parse(menu.allergens);
+        return { ...emptyAllergenMap(), ...parsed } as AllergenMap;
+      } catch { /* fall through */ }
+    }
+    return emptyAllergenMap();
+  });
+  const [allergenLang, setAllergenLang] = useState<AllergenLang>("ja");
+  const [guessing, setGuessing] = useState(false);
+  const [guessResult, setGuessResult] = useState<string[]>([]);
+
+  const handleGuess = async () => {
+    if (!name.trim()) return;
+    setGuessing(true);
+    setGuessResult([]);
+    try {
+      const stepDescs = steps
+        .filter((s) => s.description.trim())
+        .map((s) => s.description);
+      const res = await fetch("/api/allergens/guess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menu_name: name, step_descriptions: stepDescs }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newMap = { ...allergenMap };
+        for (const key of ALL_ALLERGENS) {
+          if (data.allergens[key] === true) {
+            newMap[key] = true;
+          } else if (newMap[key] === null) {
+            // null → false のみ（既に設定済みは上書きしない）
+            newMap[key] = false;
+          }
+        }
+        setAllergenMap(newMap);
+        setGuessResult(data.detected as string[]);
+      }
+    } catch { /* ignore */ }
+    finally { setGuessing(false); }
+  };
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const addStep = () =>
-    setSteps([...steps, { step: steps.length + 1, task_type: "調理", description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "" }]);
+    setSteps([...steps, { step: steps.length + 1, task_type: "調理", description: "", estimated_time_seconds: "", auto_next: false, required_checklist: "", image_url: null }]);
 
-  const updateStep = (i: number, field: keyof StepDraft, value: string | number | boolean) => {
+  const updateStep = (i: number, field: keyof StepDraft, value: string | number | boolean | null) => {
     const s = steps.map((item, idx) => idx === i ? { ...item, [field]: value } : item);
     s.forEach((item, idx) => { item.step = idx + 1; });
     setSteps(s);
@@ -264,6 +321,7 @@ function MenuForm({ menu, language, onSaved, onCancel }: FormProps) {
     const payload = {
       name: name.trim(),
       category: category.trim() || null,
+      allergens: JSON.stringify(allergenMap),
       steps: validSteps.map((s) => ({
         step: s.step,
         task_type: s.task_type,
@@ -273,6 +331,7 @@ function MenuForm({ menu, language, onSaved, onCancel }: FormProps) {
         required_checklist: s.required_checklist.trim()
           ? JSON.stringify(s.required_checklist.split(",").map((x) => x.trim()).filter(Boolean))
           : null,
+        image_url: s.image_url ?? null,
       })),
     };
 
@@ -386,11 +445,138 @@ function MenuForm({ menu, language, onSaved, onCancel }: FormProps) {
                 />
               </div>
             </div>
+            {/* Row 3: レシピ写真 */}
+            <StepPhotoUpload
+              imageUrl={step.image_url}
+              onUploaded={(url) => updateStep(i, "image_url", url)}
+              onRemove={() => updateStep(i, "image_url", null)}
+            />
           </div>
         ))}
         <button className="btn-secondary btn-small" onClick={addStep} style={{ marginTop: 8 }}>
           + {t(language, "addStep")}
         </button>
+      </div>
+
+      {/* ── アレルゲン設定 ──────────────────────────── */}
+      <div style={styles.formField}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" as const }}>
+          <label style={styles.label}>🥜 アレルゲン（29品目）</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+            <span style={{ fontSize: "0.78rem", color: "#8c6f5a" }}>表示言語:</span>
+            <select
+              value={allergenLang}
+              onChange={(e) => setAllergenLang(e.target.value as AllergenLang)}
+              style={{ ...styles.input, width: "auto", padding: "4px 8px", fontSize: "0.8rem" }}
+            >
+              {(Object.entries(ALLERGEN_LANG_NAMES) as [AllergenLang, string][]).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* 自動推定ボタン */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" as const }}>
+          <button
+            className="btn-secondary btn-small"
+            onClick={handleGuess}
+            disabled={guessing || !name.trim()}
+            style={{ background: "rgba(90,125,175,0.12)", color: "#3a6daf" }}
+          >
+            {guessing ? "推定中..." : "✨ 名称から自動推定"}
+          </button>
+          {menu && (
+            <button
+              className="btn-secondary btn-small"
+              onClick={async () => {
+                setGuessing(true);
+                try {
+                  const res = await fetch(`/api/allergens/from-ingredients/${menu.id}`, { method: "POST" });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setAllergenMap({ ...emptyAllergenMap(), ...data.allergens } as AllergenMap);
+                    setGuessResult(data.detected_from_ingredients as string[]);
+                  }
+                } catch { /* ignore */ }
+                finally { setGuessing(false); }
+              }}
+              disabled={guessing}
+              style={{ background: "rgba(39,174,96,0.10)", color: "#27ae60" }}
+            >
+              🥗 食材から自動計算
+            </button>
+          )}
+          <span style={{ fontSize: "0.78rem", color: "#8c6f5a" }}>
+            メニュー名・手順・食材リンクからアレルゲンを検出
+          </span>
+        </div>
+        {guessResult.length > 0 && (
+          <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(90,125,175,0.08)", borderRadius: 8, fontSize: "0.8rem", color: "#3a5580" }}>
+            検出: {guessResult.map((k) => ALLERGEN_NAMES[k as AllergenKey]?.[allergenLang] ?? k).join("、")}
+          </div>
+        )}
+
+        {/* 義務表示8品目 */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#c0392b", marginBottom: 8 }}>
+            🔴 義務表示（8品目）
+          </div>
+          <div style={aStyles.grid}>
+            {MANDATORY_ALLERGENS.map((key) => (
+              <AllergenToggle
+                key={key}
+                allergenKey={key}
+                value={allergenMap[key]}
+                label={ALLERGEN_NAMES[key]?.[allergenLang] ?? key}
+                tier="mandatory"
+                onChange={(v) => setAllergenMap({ ...allergenMap, [key]: v })}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* 推奨表示20品目 */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#d68910", marginBottom: 8 }}>
+            🟡 推奨表示（20品目）
+          </div>
+          <div style={aStyles.grid}>
+            {RECOMMENDED_ALLERGENS.map((key) => (
+              <AllergenToggle
+                key={key}
+                allergenKey={key}
+                value={allergenMap[key]}
+                label={ALLERGEN_NAMES[key]?.[allergenLang] ?? key}
+                tier="recommended"
+                onChange={(v) => setAllergenMap({ ...allergenMap, [key]: v })}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* 将来追加候補 */}
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#7f8c8d", marginBottom: 8 }}>
+            ⚪ 将来追加候補
+          </div>
+          <div style={aStyles.grid}>
+            {["pistachio" as AllergenKey].map((key) => (
+              <AllergenToggle
+                key={key}
+                allergenKey={key}
+                value={allergenMap[key]}
+                label={ALLERGEN_NAMES[key]?.[allergenLang] ?? key}
+                tier="future"
+                onChange={(v) => setAllergenMap({ ...allergenMap, [key]: v })}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ fontSize: "0.73rem", color: "#a09080", marginTop: 6 }}>
+          ✅ 含む　❌ 含まない　❓ 未調査（クリックで切替）
+        </div>
       </div>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -403,6 +589,77 @@ function MenuForm({ menu, language, onSaved, onCancel }: FormProps) {
       >
         {submitting ? "保存中..." : t(language, "submit")}
       </button>
+    </div>
+  );
+}
+
+// ─── ステップ写真アップロード ─────────────────────────────
+function StepPhotoUpload({
+  imageUrl,
+  onUploaded,
+  onRemove,
+}: {
+  imageUrl: string | null;
+  onUploaded: (url: string) => void;
+  onRemove: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/upload/photo", { method: "POST", body: form });
+      if (res.ok) {
+        const data = await res.json();
+        onUploaded(data.url as string);
+      }
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" as const }}>
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+      {imageUrl ? (
+        <>
+          <img
+            src={imageUrl}
+            alt="レシピ写真"
+            style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1.5px solid rgba(220,190,160,0.4)", cursor: "pointer" }}
+            onClick={() => window.open(imageUrl, "_blank")}
+          />
+          <button
+            className="btn-secondary btn-small"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            style={{ fontSize: "0.78rem" }}
+          >
+            📷 写真を変更
+          </button>
+          <button
+            style={{ fontSize: "0.78rem", padding: "4px 8px", background: "rgba(233,69,96,0.08)", color: "#e94560", border: "none", borderRadius: 6, cursor: "pointer" }}
+            onClick={onRemove}
+          >
+            ✕ 削除
+          </button>
+        </>
+      ) : (
+        <button
+          className="btn-secondary btn-small"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{ fontSize: "0.78rem", color: "#5a7daf", background: "rgba(90,125,175,0.08)" }}
+        >
+          {uploading ? "アップロード中..." : "📷 レシピ写真を追加"}
+        </button>
+      )}
     </div>
   );
 }
@@ -547,6 +804,92 @@ function MenuIngredientEditor({ menu, language, onBack }: {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ─── アレルゲントグルボタン ────────────────────────────────
+type AllergenValue = true | false | null;
+
+interface AllergenToggleProps {
+  allergenKey: AllergenKey;
+  value: AllergenValue;
+  label: string;
+  tier: "mandatory" | "recommended" | "future";
+  onChange: (v: AllergenValue) => void;
+}
+
+function AllergenToggle({ value, label, tier, onChange }: AllergenToggleProps) {
+  // クリックで null → false → true → null のサイクル
+  const cycle = (): void => {
+    if (value === null) onChange(true);
+    else if (value === true) onChange(false);
+    else onChange(null);
+  };
+
+  const icon = value === true ? "✅" : value === false ? "❌" : "❓";
+  const borderColor =
+    value === true
+      ? tier === "mandatory" ? "#c0392b" : tier === "recommended" ? "#d68910" : "#7f8c8d"
+      : value === false ? "#27ae6055" : "rgba(200,180,160,0.3)";
+  const bg =
+    value === true
+      ? tier === "mandatory" ? "rgba(192,57,43,0.10)" : tier === "recommended" ? "rgba(214,137,16,0.10)" : "rgba(127,140,141,0.10)"
+      : value === false ? "rgba(39,174,96,0.06)" : "rgba(255,252,248,0.9)";
+
+  return (
+    <button
+      onClick={cycle}
+      title={`${icon} ${label}`}
+      style={{
+        display: "flex", alignItems: "center", gap: 4,
+        padding: "5px 10px", borderRadius: 8, cursor: "pointer",
+        border: `1.5px solid ${borderColor}`,
+        background: bg,
+        fontSize: "0.82rem", fontWeight: value === true ? 700 : 400,
+        color: value === true ? "#2d1a0e" : "#6a5a4a",
+        transition: "all 0.15s",
+        whiteSpace: "nowrap" as const,
+      }}
+    >
+      <span>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+const aStyles: Record<string, React.CSSProperties> = {
+  grid: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: 6,
+  },
+};
+
+// ─── メニューカードのアレルゲンバッジ ────────────────────────
+function AllergenBadges({ allergenJson }: { allergenJson: string | null }) {
+  if (!allergenJson) return null;
+  let map: Record<string, boolean | null>;
+  try { map = JSON.parse(allergenJson); } catch { return null; }
+
+  const present = MANDATORY_ALLERGENS.filter((k) => map[k] === true);
+  if (present.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginTop: 8 }}>
+      {present.map((k) => (
+        <span
+          key={k}
+          title={ALLERGEN_NAMES[k]?.en ?? k}
+          style={{
+            fontSize: "0.72rem", padding: "2px 7px", borderRadius: 4,
+            background: "rgba(192,57,43,0.10)", color: "#c0392b",
+            border: "1px solid rgba(192,57,43,0.25)", fontWeight: 600,
+          }}
+        >
+          {ALLERGEN_NAMES[k]?.ja ?? k}
+        </span>
+      ))}
     </div>
   );
 }

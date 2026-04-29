@@ -31,6 +31,8 @@ class MenuStepOut(BaseModel):
 class MenuCreate(BaseModel):
     name: str
     category: Optional[str] = None
+    timing_config: Optional[str] = None   # JSON文字列
+    allergens: Optional[str] = None       # JSON文字列 {egg:true, milk:false, ...}
     steps: List[MenuStepCreate] = []
 
 
@@ -38,6 +40,8 @@ class MenuUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
     is_active: Optional[bool] = None
+    timing_config: Optional[str] = None
+    allergens: Optional[str] = None
     steps: Optional[List[MenuStepCreate]] = None
 
 
@@ -46,6 +50,8 @@ class MenuOut(BaseModel):
     name: str
     category: Optional[str]
     is_active: bool
+    timing_config: Optional[str] = None
+    allergens: Optional[str] = None
     created_at: datetime
     steps: List[MenuStepOut] = []
 
@@ -82,6 +88,7 @@ class TaskOut(BaseModel):
     estimated_time_seconds: Optional[int] = None
     auto_next: bool = False
     required_checklist: Optional[str] = None
+    image_url: Optional[str] = None       # レシピ写真URL
 
     model_config = {"from_attributes": True}
 
@@ -193,6 +200,7 @@ class IngredientCreate(BaseModel):
     current_stock: float = 0.0
     min_stock_alert: float = 0.0
     category: str = "その他"
+    allergens: Optional[str] = None   # JSON文字列 {egg:true, milk:false, ...}
 
 
 class IngredientUpdate(BaseModel):
@@ -201,6 +209,7 @@ class IngredientUpdate(BaseModel):
     current_stock: Optional[float] = None
     min_stock_alert: Optional[float] = None
     category: Optional[str] = None
+    allergens: Optional[str] = None
 
 
 class IngredientOut(BaseModel):
@@ -210,6 +219,7 @@ class IngredientOut(BaseModel):
     current_stock: float
     min_stock_alert: float
     category: str = "その他"
+    allergens: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

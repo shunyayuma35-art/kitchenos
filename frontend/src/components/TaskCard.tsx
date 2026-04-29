@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { Task, Language } from "../types";
 import { t } from "../i18n/translations";
+import { MANDATORY_ALLERGENS, RECOMMENDED_ALLERGENS, ALLERGEN_NAMES, type AllergenKey } from "../i18n/allergens";
 
 interface Props {
   task: Task;
   menuName: string;
   tableNumber: string;
   language: Language;
+  allergenJson?: string | null;
   onStart: (taskId: number) => void;
   onComplete: (taskId: number, photoUrl?: string) => void;
 }
@@ -69,8 +71,35 @@ function parseDescription(desc: string): Block[] {
   return blocks;
 }
 
+// ─── レシピ写真ビュー ──────────────────────────────────
+function RecipePhoto({ url }: { url: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <img
+        src={url}
+        alt="レシピ写真"
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: "100%",
+          maxHeight: expanded ? 400 : 140,
+          objectFit: "cover",
+          borderRadius: 10,
+          border: "1.5px solid rgba(220,190,160,0.35)",
+          cursor: "pointer",
+          transition: "max-height 0.3s",
+          display: "block",
+        }}
+      />
+      <div style={{ fontSize: "0.72rem", color: "#a0a0b0", textAlign: "center" as const, marginTop: 3 }}>
+        📷 レシピ写真 {expanded ? "（タップで縮小）" : "（タップで拡大）"}
+      </div>
+    </div>
+  );
+}
+
 // ─── 手順ビュー（チェック付き） ───────────────────────
-function ProcedureView({ description, color, language }: { description: string; color: string; language: Language }) {
+function ProcedureView({ description, color, language, recipeImageUrl }: { description: string; color: string; language: Language; recipeImageUrl?: string | null }) {
   const resolved = resolveDescription(description, language);
   const blocks = parseDescription(resolved);
   const stepCount = blocks.filter((b) => b.kind === "step").length;
@@ -88,6 +117,9 @@ function ProcedureView({ description, color, language }: { description: string; 
 
   return (
     <div style={proc.root}>
+      {/* レシピ写真 */}
+      {recipeImageUrl && <RecipePhoto url={recipeImageUrl} />}
+
       {/* 進捗バー */}
       {stepCount > 0 && (
         <div style={proc.progressWrap}>
@@ -230,6 +262,7 @@ export default function TaskCard({
   menuName,
   tableNumber,
   language,
+  allergenJson,
   onStart,
   onComplete,
 }: Props) {
@@ -252,6 +285,8 @@ export default function TaskCard({
   const isCompleted = task.status === "completed";
   const isInProgress = task.status === "in_progress";
   const isPlating = task.task_type === "盛付";
+  // 盛付・調理・仕込みすべてで写真撮影可能
+  const canTakePhoto = isInProgress && (task.task_type === "盛付" || task.task_type === "調理" || task.task_type === "仕込み");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -319,6 +354,9 @@ export default function TaskCard({
         </div>
       </div>
 
+      {/* ── アレルゲン警告 ── */}
+      <AllergenStrip allergenJson={allergenJson} taskType={task.task_type} />
+
       {/* ── カウントダウンタイマー ── */}
       {isInProgress && remaining !== null && (
         <div style={{ ...styles.timerBar, borderColor: timerColor }}>
@@ -351,7 +389,12 @@ export default function TaskCard({
       )}
 
       {showProcedure && task.description && (
-        <ProcedureView description={task.description} color={color} language={language} />
+        <ProcedureView
+          description={task.description}
+          color={color}
+          language={language}
+          recipeImageUrl={task.image_url}
+        />
       )}
 
       {/* ── チェックリスト（作業中のみ） ── */}
@@ -390,7 +433,7 @@ export default function TaskCard({
           )}
           {isInProgress && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-              {isPlating && (
+              {canTakePhoto && (
                 <>
                   <input ref={fileRef} type="file" accept="image/*" capture="environment"
                     style={{ display: "none" }} onChange={handleFileChange} />
@@ -399,7 +442,9 @@ export default function TaskCard({
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
                   >
-                    <span style={{ fontSize: "1.5rem" }}>📸</span>
+                    <span style={{ fontSize: "1.5rem" }}>
+                      {isPlating ? "📸" : task.task_type === "調理" ? "🍳" : "🥬"}
+                    </span>
                     <span style={{ fontWeight: 700 }}>
                       {uploading ? t(language, "uploading") : photoUrl ? t(language, "retakePhoto") : t(language, "takePhoto")}
                     </span>
@@ -421,6 +466,55 @@ export default function TaskCard({
       {isCompleted && task.completed_by && (
         <div style={styles.completedInfo}>✓ {task.completed_by}</div>
       )}
+    </div>
+  );
+}
+
+// ─── アレルゲン警告ストリップ ────────────────────────────────
+function AllergenStrip({ allergenJson, taskType }: { allergenJson: string | null | undefined; taskType: string }) {
+  if (!allergenJson) return null;
+  let map: Record<string, boolean | null>;
+  try { map = JSON.parse(allergenJson); } catch { return null; }
+
+  const mandatoryPresent = MANDATORY_ALLERGENS.filter((k) => map[k] === true);
+  const recommendedPresent = RECOMMENDED_ALLERGENS.filter((k) => map[k] === true);
+  if (mandatoryPresent.length === 0 && recommendedPresent.length === 0) return null;
+
+  const label = taskType === "盛付" ? "盛付時アレルゲン確認" : taskType === "仕込み" ? "仕込み時アレルゲン注意" : "調理時アレルゲン注意";
+
+  return (
+    <div style={{
+      background: "rgba(192,57,43,0.07)",
+      border: "1.5px solid rgba(192,57,43,0.25)",
+      borderRadius: 10,
+      padding: "8px 12px",
+      display: "flex",
+      flexDirection: "column" as const,
+      gap: 6,
+    }}>
+      <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "#c0392b", letterSpacing: "0.02em" }}>
+        🥜 {label}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4 }}>
+        {mandatoryPresent.map((k) => (
+          <span key={k} style={{
+            fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, fontWeight: 700,
+            background: "rgba(192,57,43,0.14)", color: "#c0392b",
+            border: "1px solid rgba(192,57,43,0.3)",
+          }}>
+            {ALLERGEN_NAMES[k as AllergenKey]?.ja ?? k}
+          </span>
+        ))}
+        {recommendedPresent.map((k) => (
+          <span key={k} style={{
+            fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, fontWeight: 600,
+            background: "rgba(214,137,16,0.12)", color: "#d68910",
+            border: "1px solid rgba(214,137,16,0.28)",
+          }}>
+            {ALLERGEN_NAMES[k as AllergenKey]?.ja ?? k}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

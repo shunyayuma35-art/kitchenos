@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 import models
 from database import engine, SessionLocal
-from routers import orders, prep, menu, dashboard, external, setup, inventory, cooking_history, predict, tasks_now
+from routers import orders, prep, menu, dashboard, external, setup, inventory, cooking_history, predict, tasks_now, allergens
 from websocket_manager import manager
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -252,6 +252,311 @@ def seed_demo_data():
 seed_demo_data()
 
 
+def seed_additional_menus():
+    """
+    追加メニュー（カツ丼・親子丼・ハンバーグ定食・唐揚げ定食）を
+    存在しない場合のみシードする。
+    timing_config で提供タイミング最適化パラメータを保存。
+    """
+    import json as _json
+
+    db = SessionLocal()
+    try:
+        def _j(d: dict) -> str:
+            return json.dumps(d, ensure_ascii=False)
+
+        def _ing(names: dict, qty: str) -> dict:
+            return {lang: f"・{names.get(lang, names['ja'])}\t{qty}" for lang in ["ja","en","vi","ne","id","my"]}
+
+        def _sec(titles: dict) -> dict:
+            return {lang: f"【{titles.get(lang, titles['ja'])}】" for lang in ["ja","en","vi","ne","id","my"]}
+
+        def _build(parts: list) -> dict:
+            result = {lang: "" for lang in ["ja","en","vi","ne","id","my"]}
+            for part in parts:
+                for lang in result:
+                    line = part.get(lang, part.get("ja",""))
+                    if result[lang] and line:
+                        result[lang] += "\n"
+                    result[lang] += line
+            return result
+
+        NEW_MENUS = [
+            # ─── カツ丼 ───────────────────────────────────────────
+            {
+                "name": "カツ丼",
+                "category": "丼もの",
+                "timing_config": _json.dumps({
+                    "rice_before_seconds": 60,
+                    "miso_before_seconds": 60,
+                    "side_before_seconds": 30,
+                    "description": "ご飯・味噌汁はメイン完成1分前、漬物は30秒前に開始"
+                }),
+                "steps": [
+                    (1, "仕込み", _j(_build([
+                        _sec({"ja":"材料（1人前）","en":"Ingredients (1 serving)"}),
+                        _ing({"ja":"玉ねぎ","en":"Onion"}, "1/2個"),
+                        _ing({"ja":"とんかつ（揚げ置き）","en":"Tonkatsu (pre-fried)"}, "1枚"),
+                        _ing({"ja":"卵","en":"Egg"}, "2個"),
+                        _ing({"ja":"だし（めんつゆ）","en":"Dashi (mentsuyu)"}, "大さじ3"),
+                        _ing({"ja":"水","en":"Water"}, "100ml"),
+                        _ing({"ja":"砂糖","en":"Sugar"}, "小さじ1"),
+                        _ing({"ja":"三つ葉","en":"Mitsuba"}, "適量"),
+                        _sec({"ja":"仕込み手順","en":"Prep Steps"}),
+                        {"ja":"① 玉ねぎは繊維に沿って5mm幅の薄切りにする（厚すぎると火が通りにくい）",
+                         "en":"① Slice onion 5mm thin along the grain (too thick = uneven cooking)"},
+                        {"ja":"② めんつゆ大さじ3と水100ml・砂糖小さじ1を小鍋で合わせて「だし」を作る",
+                         "en":"② Combine mentsuyu 3 tbsp + water 100ml + sugar 1 tsp in a small pot to make dashi"},
+                        {"ja":"③ とんかつは注文が入ったら180℃の油で4〜5分揚げ、油を切っておく（揚げ置きの場合はトースターで1分温め直す）",
+                         "en":"③ Fry tonkatsu at 180°C for 4–5 min; drain well (pre-fried: reheat in toaster 1 min)"},
+                        {"ja":"④ 三つ葉は3cm長さにカットして冷蔵保管",
+                         "en":"④ Cut mitsuba into 3cm pieces, refrigerate until needed"},
+                    ]))),
+                    (2, "調理", _j(_build([
+                        _sec({"ja":"調理手順","en":"Cooking Steps"}),
+                        {"ja":"① 親子鍋（または小フライパン）にだしを入れ中火にかける",
+                         "en":"① Pour dashi into oyako pan (or small frying pan), heat on medium"},
+                        {"ja":"② 沸いたら玉ねぎを入れ、しんなりするまで2〜3分煮る",
+                         "en":"② When boiling, add onion and simmer 2–3 min until softened"},
+                        {"ja":"③ とんかつを食べやすい幅（約2cm）にカットし、煮汁の中に広げて入れる",
+                         "en":"③ Cut tonkatsu into 2cm strips, spread evenly in the simmering dashi"},
+                        {"ja":"④ 卵1個を溶き、外側から2/3ほどに回し入れる（1回目・固め）",
+                         "en":"④ Beat 1 egg, pour 2/3 around the outer edge (1st pour — firm layer)"},
+                        {"ja":"⑤ フタをして20秒加熱後フタを外し、残りの溶き卵を中央に回し入れる（2回目・半熟）",
+                         "en":"⑤ Cover 20 sec, uncover, pour remaining beaten egg into center (2nd pour — soft set)"},
+                        {"ja":"⑥ 火を止め余熱で好みのとろみに仕上げる（半熟が目安）",
+                         "en":"⑥ Turn off heat, let residual heat finish the egg to preferred softness"},
+                    ]))),
+                    (3, "盛付", _j(_build([
+                        _sec({"ja":"盛付手順","en":"Plating Steps"}),
+                        {"ja":"① 丼にご飯200gを盛り、表面を平らに整える",
+                         "en":"① Place 200g rice in bowl, smooth the surface"},
+                        {"ja":"② 親子鍋を傾け、具材を崩さないようにご飯の上に滑らせてのせる",
+                         "en":"② Tilt the pan and slide the katsu-egg topping gently onto the rice"},
+                        {"ja":"③ 三つ葉を中央に彩りよく飾る",
+                         "en":"③ Garnish with mitsuba in the center for color"},
+                        {"ja":"④ 丼のフチを拭き、テーブル番号を確認して提供",
+                         "en":"④ Wipe bowl rim, confirm table number, and serve"},
+                    ]))),
+                ],
+            },
+            # ─── 親子丼 ───────────────────────────────────────────
+            {
+                "name": "親子丼",
+                "category": "丼もの",
+                "timing_config": _json.dumps({
+                    "rice_before_seconds": 60,
+                    "miso_before_seconds": 60,
+                    "side_before_seconds": 30,
+                    "description": "ご飯・味噌汁はメイン完成1分前、漬物は30秒前に開始"
+                }),
+                "steps": [
+                    (1, "仕込み", _j(_build([
+                        _sec({"ja":"材料（1人前）","en":"Ingredients (1 serving)"}),
+                        _ing({"ja":"鶏もも肉","en":"Chicken thigh"}, "100g"),
+                        _ing({"ja":"玉ねぎ","en":"Onion"}, "1/4個"),
+                        _ing({"ja":"卵","en":"Egg"}, "2個"),
+                        _ing({"ja":"だし（めんつゆ）","en":"Dashi (mentsuyu)"}, "大さじ3"),
+                        _ing({"ja":"水","en":"Water"}, "100ml"),
+                        _ing({"ja":"三つ葉","en":"Mitsuba"}, "適量"),
+                        _sec({"ja":"仕込み手順","en":"Prep Steps"}),
+                        {"ja":"① 鶏もも肉は余分な脂を取り除き、一口大（約3cm）にカットする",
+                         "en":"① Trim excess fat from chicken thigh, cut into bite-size pieces (about 3cm)"},
+                        {"ja":"② 玉ねぎは繊維に沿って5mm幅の薄切りにする",
+                         "en":"② Slice onion 5mm thin along the grain"},
+                        {"ja":"③ めんつゆ大さじ3・水100mlを合わせてだしを作る",
+                         "en":"③ Mix mentsuyu 3 tbsp + water 100ml to make dashi"},
+                        {"ja":"④ 三つ葉は3cm長さにカットして冷蔵保管",
+                         "en":"④ Cut mitsuba into 3cm pieces, refrigerate"},
+                    ]))),
+                    (2, "調理", _j(_build([
+                        _sec({"ja":"調理手順","en":"Cooking Steps"}),
+                        {"ja":"① 親子鍋にだしを入れ中火にかけ、沸いたら玉ねぎを入れる",
+                         "en":"① Pour dashi into oyako pan, heat medium; when boiling add onion"},
+                        {"ja":"② 玉ねぎが透明になったら鶏肉を入れ、色が変わるまで2〜3分煮る",
+                         "en":"② When onion is translucent, add chicken; simmer 2–3 min until color changes"},
+                        {"ja":"③ 鶏肉に火が通ったことを確認（中心部が白くなっていること）",
+                         "en":"③ Confirm chicken is cooked through (white in the center)"},
+                        {"ja":"④ 卵1個を溶き、外側から2/3ほどに回し入れる（1回目・固め）",
+                         "en":"④ Beat 1 egg, pour 2/3 around outer edge (1st pour — firm)"},
+                        {"ja":"⑤ フタをして20秒加熱後、残りの溶き卵を中央に回し入れる（2回目・半熟）",
+                         "en":"⑤ Cover 20 sec, pour remaining egg into center (2nd pour — soft set)"},
+                        {"ja":"⑥ 火を止め余熱で半熟に仕上げる",
+                         "en":"⑥ Turn off heat, finish with residual heat to soft scramble"},
+                    ]))),
+                    (3, "盛付", _j(_build([
+                        _sec({"ja":"盛付手順","en":"Plating Steps"}),
+                        {"ja":"① 丼にご飯200gを盛り、表面を平らに整える",
+                         "en":"① Place 200g rice in bowl, smooth the surface"},
+                        {"ja":"② 親子鍋を傾け、具材をご飯の上に静かに滑らせる",
+                         "en":"② Tilt pan and slide topping gently onto the rice"},
+                        {"ja":"③ 三つ葉を中央に飾る",
+                         "en":"③ Garnish with mitsuba in the center"},
+                        {"ja":"④ 丼のフチを拭き、テーブル番号確認後に提供",
+                         "en":"④ Wipe rim, check table number, and serve"},
+                    ]))),
+                ],
+            },
+            # ─── ハンバーグ定食 ───────────────────────────────────
+            {
+                "name": "ハンバーグ定食",
+                "category": "定食",
+                "timing_config": _json.dumps({
+                    "rice_before_seconds": 120,
+                    "miso_before_seconds": 60,
+                    "side_before_seconds": 60,
+                    "salad_before_seconds": 60,
+                    "drink_before_seconds": 60,
+                    "description": "焼き時間が長いためご飯は2分前、味噌汁・サラダ・ドリンクは1分前に開始"
+                }),
+                "steps": [
+                    (1, "仕込み", _j(_build([
+                        _sec({"ja":"材料（1人前）","en":"Ingredients (1 serving)"}),
+                        _ing({"ja":"合挽き肉","en":"Ground meat mix"}, "150g"),
+                        _ing({"ja":"玉ねぎ（みじん切り）","en":"Onion (minced)"}, "1/4個"),
+                        _ing({"ja":"パン粉","en":"Breadcrumbs"}, "大さじ2"),
+                        _ing({"ja":"牛乳","en":"Milk"}, "大さじ1"),
+                        _ing({"ja":"卵","en":"Egg"}, "1/2個"),
+                        _ing({"ja":"塩・胡椒","en":"Salt & Pepper"}, "少々"),
+                        _ing({"ja":"デミグラスソース（市販）","en":"Demi-glace sauce (premade)"}, "大さじ3"),
+                        _ing({"ja":"コーン・人参（付け合わせ）","en":"Corn & carrot (garnish)"}, "各適量"),
+                        _sec({"ja":"仕込み手順","en":"Prep Steps"}),
+                        {"ja":"① 玉ねぎをみじん切りにし、バターで飴色になるまで炒め冷ます（時短: レンジ600W・3分）",
+                         "en":"① Mince onion, sauté in butter until caramelized; cool (shortcut: microwave 600W 3 min)"},
+                        {"ja":"② ボウルに合挽き肉・冷ました玉ねぎ・パン粉・牛乳・卵・塩胡椒を入れよく練る",
+                         "en":"② In a bowl, mix ground meat + cooled onion + breadcrumbs + milk + egg + S&P; knead well"},
+                        {"ja":"③ 空気を抜きながら小判型に成形（中央をやや凹ませると火が均一に入る）",
+                         "en":"③ Shape into oval patty, pressing air out; indent center slightly for even cooking"},
+                        {"ja":"④ 付け合わせ（コーン・人参）をボイルまたはソテーして用意",
+                         "en":"④ Boil or sauté corn and carrots as garnish; set aside"},
+                        {"ja":"⑤ デミグラスソースを小鍋で温めておく（弱火・濃度調整）",
+                         "en":"⑤ Warm demi-glace sauce in a small pot on low heat; adjust consistency"},
+                    ]))),
+                    (2, "調理", _j(_build([
+                        _sec({"ja":"調理手順","en":"Cooking Steps"}),
+                        {"ja":"① フライパンに油を中火で熱し、ハンバーグを入れて2分焼く",
+                         "en":"① Heat oil in frying pan on medium; add patty and sear 2 min"},
+                        {"ja":"② 裏返して1分焼き、きれいな焼き色をつける",
+                         "en":"② Flip; sear 1 min to form a nice crust on both sides"},
+                        {"ja":"③ 水50mlを加えフタをして弱火で6〜8分蒸し焼きにする",
+                         "en":"③ Add 50ml water, cover, steam-cook on low heat 6–8 min"},
+                        {"ja":"④ 竹串で刺して透明な肉汁が出ればOK（赤い汁 = 未加熱）",
+                         "en":"④ Pierce with skewer: clear juice = done; red juice = needs more cooking"},
+                        {"ja":"⑤ 付け合わせを同フライパンで軽くソテーして味付け",
+                         "en":"⑤ Quickly sauté garnish in the same pan and season"},
+                    ]))),
+                    (3, "盛付", _j(_build([
+                        _sec({"ja":"盛付手順","en":"Plating Steps"}),
+                        {"ja":"① 丼にご飯200gを盛り、味噌汁をよそう",
+                         "en":"① Scoop 200g rice; pour miso soup into a separate bowl"},
+                        {"ja":"② 楕円皿の中央にハンバーグをのせる",
+                         "en":"② Place hamburger steak in the center of an oval plate"},
+                        {"ja":"③ 付け合わせ（コーン・人参・サラダ）をハンバーグの両脇に盛る",
+                         "en":"③ Arrange garnish (corn, carrot, salad) on both sides of the patty"},
+                        {"ja":"④ ハンバーグの上から温めたデミグラスソースを2〜3杓かける",
+                         "en":"④ Drizzle warm demi-glace sauce (2–3 spoonfuls) over the patty"},
+                        {"ja":"⑤ パセリを一振りして完成。テーブル番号確認後に提供",
+                         "en":"⑤ Sprinkle parsley; confirm table number and serve"},
+                    ]))),
+                ],
+            },
+            # ─── 唐揚げ定食 ───────────────────────────────────────
+            {
+                "name": "唐揚げ定食",
+                "category": "定食",
+                "timing_config": _json.dumps({
+                    "rice_before_seconds": 60,
+                    "miso_before_seconds": 60,
+                    "side_before_seconds": 60,
+                    "salad_before_seconds": 120,
+                    "description": "揚げたてが命。サラダは2分前、ご飯・味噌汁は1分前に開始。唐揚げは最後に揚げる"
+                }),
+                "steps": [
+                    (1, "仕込み", _j(_build([
+                        _sec({"ja":"材料（1人前）","en":"Ingredients (1 serving)"}),
+                        _ing({"ja":"鶏もも肉","en":"Chicken thigh"}, "200g"),
+                        _ing({"ja":"醤油","en":"Soy sauce"}, "大さじ1.5"),
+                        _ing({"ja":"酒","en":"Sake"}, "大さじ1"),
+                        _ing({"ja":"みりん","en":"Mirin"}, "小さじ1"),
+                        _ing({"ja":"おろしにんにく","en":"Grated garlic"}, "小さじ1/2"),
+                        _ing({"ja":"おろし生姜","en":"Grated ginger"}, "小さじ1/2"),
+                        _ing({"ja":"片栗粉","en":"Potato starch"}, "大さじ3"),
+                        _ing({"ja":"薄力粉","en":"Flour"}, "大さじ1"),
+                        _ing({"ja":"キャベツ（千切り）","en":"Cabbage (julienned)"}, "100g"),
+                        _ing({"ja":"レモン","en":"Lemon"}, "1/4個"),
+                        _sec({"ja":"仕込み手順","en":"Prep Steps"}),
+                        {"ja":"① 鶏もも肉の余分な脂を取り除き、一口大（約35g）にカットする",
+                         "en":"① Trim excess fat from chicken thigh; cut into bite-size pieces (about 35g each)"},
+                        {"ja":"② ポリ袋に鶏肉・醤油・酒・みりん・にんにく・生姜を入れよく揉む",
+                         "en":"② In a zip bag, combine chicken + soy sauce + sake + mirin + garlic + ginger; massage well"},
+                        {"ja":"③ 冷蔵庫で15〜30分漬ける（仕込みのタイミングで実施）",
+                         "en":"③ Refrigerate 15–30 min to marinate (complete during prep phase)"},
+                        {"ja":"④ キャベツを千切りにし、冷水に5分さらしてシャキシャキにする",
+                         "en":"④ Julienne cabbage; soak in cold water 5 min for crunch"},
+                        {"ja":"⑤ 漬け込んだ鶏肉の水気を拭き取り、片栗粉＋薄力粉を混ぜてまぶす",
+                         "en":"⑤ Pat chicken dry; coat evenly in potato starch + flour mixture"},
+                    ]))),
+                    (2, "調理", _j(_build([
+                        _sec({"ja":"調理手順（揚げたてが命！）","en":"Cooking Steps (fresh from the fryer!)"}),
+                        {"ja":"① フライヤー（または深鍋）に油を160℃に熱する",
+                         "en":"① Heat oil in fryer (or deep pot) to 160°C"},
+                        {"ja":"② 鶏肉を4〜5個ずつ入れ、160℃で3分揚げる（低温でじっくり火入れ）",
+                         "en":"② Add 4–5 pieces at a time; fry at 160°C for 3 min (low-temp first cook)"},
+                        {"ja":"③ 一度引き上げ1分休ませる（余熱で中まで火を入れる）",
+                         "en":"③ Remove and rest 1 min (let carry-over heat cook the center)"},
+                        {"ja":"④ 油を180℃に上げ、再投入して1〜1.5分揚げてカリッとさせる（二度揚げ）",
+                         "en":"④ Raise oil to 180°C; re-fry 1–1.5 min until crispy (double-fry technique)"},
+                        {"ja":"⑤ 油を切りすぐに盛付へ（揚げたて提供必須）",
+                         "en":"⑤ Drain immediately and pass to plating at once (must serve hot)"},
+                    ]))),
+                    (3, "盛付", _j(_build([
+                        _sec({"ja":"盛付手順","en":"Plating Steps"}),
+                        {"ja":"① 定食トレーにご飯・味噌汁・キャベツ千切りを先に配置する",
+                         "en":"① Pre-set rice, miso soup, and julienned cabbage on the set tray"},
+                        {"ja":"② 揚げたての唐揚げ（5〜6個）を皿の中央に盛る",
+                         "en":"② Arrange fresh karaage (5–6 pieces) in the center of the plate"},
+                        {"ja":"③ レモン1/4をカットして添える",
+                         "en":"③ Place a lemon wedge (1/4) alongside"},
+                        {"ja":"④ 醤油・マヨネーズを小皿に添える",
+                         "en":"④ Serve soy sauce and mayonnaise in small dishes on the side"},
+                        {"ja":"⑤ テーブル番号を確認してすぐに提供（唐揚げは時間との勝負）",
+                         "en":"⑤ Confirm table number and serve immediately (karaage waits for no one)"},
+                    ]))),
+                ],
+            },
+        ]
+
+        for m in NEW_MENUS:
+            exists = db.query(models.Menu).filter(models.Menu.name == m["name"]).first()
+            if exists:
+                continue
+            menu_obj = models.Menu(
+                name=m["name"],
+                category=m["category"],
+                is_active=True,
+                timing_config=m.get("timing_config"),
+            )
+            db.add(menu_obj)
+            db.flush()
+            for step_num, task_type, desc in m["steps"]:
+                db.add(models.MenuStep(
+                    menu_id=menu_obj.id,
+                    step=step_num,
+                    task_type=task_type,
+                    description=desc,
+                ))
+        db.commit()
+        print("[SEED] Additional menus (カツ丼/親子丼/ハンバーグ定食/唐揚げ定食) seeded")
+    except Exception as e:
+        db.rollback()
+        print(f"[SEED] Additional menus seed failed: {e}")
+    finally:
+        db.close()
+
+
+seed_additional_menus()
+
+
 def seed_demo_order():
     """練習用: テーブルA1の味噌ラーメン注文を初回起動時に投入"""
     db = SessionLocal()
@@ -367,6 +672,7 @@ app.include_router(inventory.router)
 app.include_router(cooking_history.router)
 app.include_router(predict.router)
 app.include_router(tasks_now.router)
+app.include_router(allergens.router)
 
 # inventory ルーターに WebSocket manager を注入
 inventory.set_manager(manager)

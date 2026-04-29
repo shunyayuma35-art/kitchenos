@@ -71,6 +71,7 @@ async def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_d
                 estimated_time_seconds=menu_step.estimated_time_seconds if menu_step else None,
                 auto_next=menu_step.auto_next if menu_step else False,
                 required_checklist=menu_step.required_checklist if menu_step else None,
+                image_url=menu_step.image_url if menu_step else None,
             )
             db.add(task)
 
