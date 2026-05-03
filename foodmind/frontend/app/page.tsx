@@ -45,6 +45,23 @@ export default function Home() {
   const warningItems = priorityItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 5);
   const today = new Date().toLocaleDateString(t.locale, { month: "long", day: "numeric", weekday: "short" });
 
+  // 冷蔵庫スコア計算
+  const fridgeScore = Math.max(0, Math.min(100,
+    100
+    - allItems.filter((i) => i.expiryDays <= 2).length * 20
+    - allItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 7).length * 8
+  ));
+  const scoreMeta = fridgeScore >= 85
+    ? { label: "いい感じ！", color: "text-emerald-300" }
+    : fridgeScore >= 65
+      ? { label: "まあまあ", color: "text-yellow-200" }
+      : fridgeScore >= 45
+        ? { label: "使っちゃおう", color: "text-orange-200" }
+        : { label: "たすけて〜", color: "text-red-200" };
+
+  // 今日助けられる食材（1〜3日以内）
+  const savingsCount = allItems.filter((i) => i.expiryDays >= 1 && i.expiryDays <= 3).length;
+
   const loadData = useCallback(async () => {
     try {
       const [d, items] = await Promise.all([fetchToday(), fetchItems()]);
@@ -155,37 +172,53 @@ export default function Home() {
         <p className="text-white/60 text-xs uppercase tracking-widest mb-1">{t.homeSubtitle}</p>
         <h1 className="text-white text-4xl font-bold tracking-tight">パシャ食</h1>
         <p className="text-white/90 text-sm font-medium mt-0.5">{t.homeTagline}</p>
-        <div className="flex items-center gap-2 mt-2">
-          <p className="text-white/60 text-xs">{today}</p>
-          {!loading && (
-            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-              urgentItems.length > 0
-                ? "bg-red-500/30 text-white"
-                : warningItems.length > 0
-                  ? "bg-white/20 text-white/80"
-                  : "bg-white/20 text-white/70"
-            }`}>
-              {urgentItems.length > 0 ? "🔴" : warningItems.length > 0 ? "🟡" : "🟢"}
-              {urgentItems.length > 0 ? t.homeStatusUrgent : warningItems.length > 0 ? t.homeStatusWarn : t.homeStatusGood}
-            </span>
-          )}
-        </div>
-      </div>
+        <p className="text-white/60 text-xs mt-2">{today}</p>
 
-      {/* ── アラートカード ── */}
-      <div className="px-4 -mt-5 space-y-2">
-        {urgentItems.length > 0 && (
-          <div className="bg-red-500 text-white rounded-2xl px-4 py-4 card-shadow-md animate-slide-up">
-            <p className="font-bold text-base">
-              {t.homeUrgent(urgentItems.map((i) => i.name).filter((v, idx, a) => a.indexOf(v) === idx).join(t.nameSep))}
-            </p>
+        {/* 冷蔵庫スコア */}
+        {!loading && allItems.length > 0 && (
+          <div className="mt-4 bg-white/15 rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider">🥬 冷蔵庫スコア</p>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-white text-2xl font-black">{fridgeScore}点</span>
+                <span className={`text-sm font-bold ${scoreMeta.color}`}>{scoreMeta.label}</span>
+              </div>
+            </div>
+            {savingsCount > 0 && (
+              <p className="text-white/70 text-xs text-right leading-snug">
+                今日は{savingsCount}つの食材を<br />ムダにせず使えそう
+              </p>
+            )}
           </div>
         )}
-        {warningItems.length > 0 && (
-          <div className="bg-amber-400 text-white rounded-2xl px-4 py-4 card-shadow animate-slide-up flex items-center gap-3">
+      </div>
+
+      {/* ── たすけて〜カード ── */}
+      <div className="px-4 -mt-5 space-y-2">
+        {urgentItems.length > 0 && (
+          <button
+            onClick={() => handleGenerate()}
+            disabled={loadingRecipes}
+            className="w-full bg-white rounded-2xl px-4 py-4 card-shadow-md animate-slide-up
+                       border-2 border-red-100 text-left active:scale-98 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-3xl shrink-0 animate-pulse-soft">🥺</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-red-500 text-base truncate">
+                  {urgentItems.map((i) => i.name).slice(0, 3).join("・")}
+                  　たすけて〜！
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">タップで今すぐレシピを考えてもらう →</p>
+              </div>
+            </div>
+          </button>
+        )}
+        {warningItems.length > 0 && urgentItems.length === 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 animate-slide-up flex items-center gap-3">
             <span className="text-2xl shrink-0">🥕</span>
-            <p className="font-bold text-base">
-              {t.homeWarning(warningItems.map((i) => i.name).filter((v, idx, a) => a.indexOf(v) === idx).join(t.nameSep))}
+            <p className="text-amber-700 font-semibold text-sm">
+              {warningItems.map((i) => i.name).slice(0, 3).join("・")} がそろそろ使い時です
             </p>
           </div>
         )}
