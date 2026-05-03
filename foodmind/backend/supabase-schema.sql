@@ -3,7 +3,7 @@
 create table if not exists items (
   id          text        primary key,
   name        text        not null,
-  category    text        not null check (category in ('fridge', 'freezer', 'vegetable')),
+  category    text        not null check (category in ('fridge', 'freezer', 'vegetable', 'pantry')),
   quantity    integer     not null check (quantity >= 0),
   expiry_days integer     not null check (expiry_days >= 0),
   created_at  timestamptz not null default now()

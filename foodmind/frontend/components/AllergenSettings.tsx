@@ -33,7 +33,7 @@ export default function AllergenSettings() {
                    bg-white border border-amber-200 shadow-md rounded-2xl
                    px-3 py-2 text-xs font-bold text-amber-700"
       >
-        🚫 除外食材
+        ⚠️ アレルギー設定
         {count > 0 && (
           <span className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
             {count}

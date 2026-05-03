@@ -22,10 +22,14 @@ export default function QRShare() {
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-[140px] right-4 z-40 bg-white border border-gray-200
-                   shadow-md rounded-2xl w-12 h-12 flex items-center justify-center text-xl"
+                   shadow-md rounded-2xl w-14 flex flex-col items-center justify-center
+                   gap-0.5 py-2 px-1"
         title="QRコードでシェア"
       >
-        📷
+        <span className="text-xl leading-none">📷</span>
+        <span className="text-[9px] font-bold text-gray-500 leading-tight text-center">
+          シェア<br />QR
+        </span>
       </button>
 
       {open && (
