@@ -128,7 +128,21 @@ export default function Home() {
         <p className="text-white/60 text-xs uppercase tracking-widest mb-1">{t.homeSubtitle}</p>
         <h1 className="text-white text-4xl font-bold tracking-tight">パシャ食</h1>
         <p className="text-white/90 text-sm font-medium mt-0.5">{t.homeTagline}</p>
-        <p className="text-white/60 text-xs mt-1">{today}</p>
+        <div className="flex items-center gap-2 mt-2">
+          <p className="text-white/60 text-xs">{today}</p>
+          {!loading && (
+            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+              urgentItems.length > 0
+                ? "bg-red-500/30 text-white"
+                : warningItems.length > 0
+                  ? "bg-white/20 text-white/80"
+                  : "bg-white/20 text-white/70"
+            }`}>
+              {urgentItems.length > 0 ? "🔴" : warningItems.length > 0 ? "🟡" : "🟢"}
+              {urgentItems.length > 0 ? t.homeStatusUrgent : warningItems.length > 0 ? t.homeStatusWarn : t.homeStatusGood}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── アラートカード ── */}
@@ -188,15 +202,15 @@ export default function Home() {
         {/* ── デモモード ── */}
         {isEmpty && (
           <section>
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-100">
-              <p className="text-xl mb-1">🎮</p>
-              <p className="font-bold text-emerald-800 text-base mb-1">{t.demoTitle}</p>
-              <p className="text-emerald-600 text-sm mb-4">{t.demoDesc}</p>
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100">
+              <p className="text-xl mb-1">✨</p>
+              <p className="font-bold text-amber-800 text-base mb-1">{t.demoTitle}</p>
+              <p className="text-amber-600 text-sm mb-4">{t.demoDesc}</p>
               <button
                 onClick={handleDemo}
                 disabled={demoLoading}
-                className="w-full py-4 bg-emerald-700 text-white rounded-2xl font-bold text-base
-                           shadow-md shadow-emerald-200 disabled:opacity-50 active:scale-98 transition-all"
+                className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold text-base
+                           shadow-md shadow-amber-200 disabled:opacity-50 active:scale-98 transition-all"
               >
                 {demoLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -221,7 +235,7 @@ export default function Home() {
               onClick={() => handleGenerate()}
               disabled={loadingRecipes || priorityItems.length === 0}
               className="w-full py-5 rounded-2xl font-bold text-base transition-all
-                         bg-emerald-700 text-white shadow-md shadow-emerald-200
+                         bg-amber-600 text-white shadow-md shadow-amber-200
                          disabled:opacity-40 disabled:shadow-none active:scale-98"
             >
               {loadingRecipes ? (

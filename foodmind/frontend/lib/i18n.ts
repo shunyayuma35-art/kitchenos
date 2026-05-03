@@ -20,6 +20,7 @@ export interface T {
   navHome: string;
   navInventory: string;
   navAdd: string;
+  navShopping: string;
   navLang: string;
   catFridge: string;
   catFreezer: string;
@@ -40,6 +41,9 @@ export interface T {
   homeGenerateDesc: string;
   homeErrFetch: string;
   homeErrRecipe: string;
+  homeStatusGood: string;
+  homeStatusWarn: string;
+  homeStatusUrgent: string;
   invSubtitle: string;
   invTitle: string;
   invNItems: (n: number) => string;
@@ -98,6 +102,15 @@ export interface T {
   demoDesc: string;
   demoBtn: string;
   demoLoading: string;
+  shopTitle: string;
+  shopSubtitle: string;
+  shopDesc: string;
+  shopNeed: string;
+  shopSoon: string;
+  shopExtra: string;
+  shopEmpty: string;
+  shopBought: string;
+  shopClear: string;
   grpLabels: Record<string, string>;
   locale: string;
   nameSep: string;
@@ -105,7 +118,7 @@ export interface T {
 
 // ── 日本語 ──────────────────────────────────────────────
 const ja: T = {
-  navHome: "ホーム", navInventory: "食材", navAdd: "食材選択", navLang: "言語",
+  navHome: "ホーム", navInventory: "食材", navAdd: "追加", navShopping: "買い物", navLang: "言語",
   catFridge: "冷蔵", catFreezer: "冷凍", catVegetable: "野菜室", catPantry: "常温",
   homeSubtitle: "食材在庫 AI",
   homeTagline: "冷蔵庫を、おいしく使いきろう",
@@ -122,6 +135,7 @@ const ja: T = {
   homeGenerateDesc: "登録した食材で、今すぐ作れる献立を提案します",
   homeErrFetch: "データ取得に失敗しました",
   homeErrRecipe: "レシピ生成に失敗しました",
+  homeStatusGood: "問題なし", homeStatusWarn: "一部注意", homeStatusUrgent: "要確認",
   invSubtitle: "My Food", invTitle: "うちの食材",
   invNItems: (n) => `${n}件の食材`,
   invUrgent: (n) => `期限注意 ${n}件`,
@@ -154,13 +168,16 @@ const ja: T = {
   addDayUnit: "日", addPieceUnit: "個",
   recipeOpen: "▼ 作り方を見る", recipeClose: "▲ 手順を閉じる", recipeMissing: "要追加:",
   demoTitle: "まず試してみよう", demoDesc: "食材サンプルを入れてAIに献立を聞いてみよう", demoBtn: "▶ お試しで使ってみる", demoLoading: "デモデータを準備中…",
+  shopTitle: "買い物リスト", shopSubtitle: "Shopping", shopDesc: "冷蔵庫から自動で作成",
+  shopNeed: "今すぐ必要", shopSoon: "そろそろ", shopExtra: "ついで買い",
+  shopEmpty: "買うものはありません", shopBought: "買った", shopClear: "完了を消す",
   grpLabels: { "すべて":"すべて","野菜":"野菜・果物","きのこ":"きのこ","芋類":"芋類","魚介":"お魚","肉類":"お肉","卵・乳":"乳製品・卵","調味料":"調味料","スパイス":"スパイス","食用油":"食用油","缶詰":"缶詰・瓶詰め","レトルト":"レトルト","冷凍品":"冷凍食品","飲み物":"飲み物" },
   locale: "ja-JP", nameSep: "・",
 };
 
 // ── English ─────────────────────────────────────────────
 const en: T = {
-  navHome: "Home", navInventory: "Pantry", navAdd: "Add", navLang: "Lang",
+  navHome: "Home", navInventory: "Pantry", navAdd: "Add", navShopping: "Shop", navLang: "Lang",
   catFridge: "Fridge", catFreezer: "Freezer", catVegetable: "Veggie", catPantry: "Pantry",
   homeSubtitle: "AI Food Assistant",
   homeTagline: "Quick meals from leftover ingredients",
@@ -177,6 +194,7 @@ const en: T = {
   homeGenerateDesc: "Suggest meals you can cook right now",
   homeErrFetch: "Failed to load data",
   homeErrRecipe: "Failed to generate recipes",
+  homeStatusGood: "All Good", homeStatusWarn: "Check Soon", homeStatusUrgent: "Needs Attention",
   invSubtitle: "Inventory", invTitle: "My Pantry",
   invNItems: (n) => `${n} items`,
   invUrgent: (n) => `${n} expiring!`,
@@ -209,13 +227,16 @@ const en: T = {
   addDayUnit: "d", addPieceUnit: "pc",
   recipeOpen: "▼ Show Steps", recipeClose: "▲ Hide Steps", recipeMissing: "Need:",
   demoTitle: "Try the Demo", demoDesc: "Add sample ingredients and auto-generate AI recipes", demoBtn: "🎮 Start Demo", demoLoading: "Preparing demo…",
+  shopTitle: "Shopping List", shopSubtitle: "Shopping", shopDesc: "Auto-generated from your pantry",
+  shopNeed: "Need Now", shopSoon: "Getting Low", shopExtra: "While You're There",
+  shopEmpty: "Nothing to buy", shopBought: "Got it", shopClear: "Clear done",
   grpLabels: { "すべて":"All","野菜":"Veggie","きのこ":"Mushroom","芋類":"Tuber","魚介":"Seafood","肉類":"Meat","卵・乳":"Egg/Dairy","調味料":"Seasoning","スパイス":"Spice","食用油":"Oil","缶詰":"Canned","レトルト":"Retort","冷凍品":"Frozen","飲み物":"Drinks" },
   locale: "en-US", nameSep: " · ",
 };
 
 // ── Tiếng Việt ──────────────────────────────────────────
 const vi: T = {
-  navHome: "Trang chủ", navInventory: "Kho", navAdd: "Thêm", navLang: "Ngôn ngữ",
+  navHome: "Trang chủ", navInventory: "Kho", navAdd: "Thêm", navShopping: "Mua sắm", navLang: "Ngôn ngữ",
   catFridge: "Tủ lạnh", catFreezer: "Ngăn đông", catVegetable: "Rau củ", catPantry: "Để khô",
   homeSubtitle: "Trợ lý AI",
   homeTagline: "Nấu nhanh từ nguyên liệu còn lại",
@@ -232,6 +253,7 @@ const vi: T = {
   homeGenerateDesc: "Gợi ý bữa ăn có thể nấu ngay",
   homeErrFetch: "Không tải được dữ liệu",
   homeErrRecipe: "Không tạo được công thức",
+  homeStatusGood: "Tốt", homeStatusWarn: "Chú ý", homeStatusUrgent: "Cần xem",
   invSubtitle: "Kho thực phẩm", invTitle: "Quản lý kho",
   invNItems: (n) => `${n} thực phẩm`,
   invUrgent: (n) => `${n} món sắp hết!`,
@@ -264,13 +286,16 @@ const vi: T = {
   addDayUnit: "ngày", addPieceUnit: "cái",
   recipeOpen: "▼ Xem cách làm", recipeClose: "▲ Ẩn cách làm", recipeMissing: "Cần thêm:",
   demoTitle: "Thử demo", demoDesc: "Thêm nguyên liệu mẫu và tạo công thức AI tự động", demoBtn: "🎮 Bắt đầu demo", demoLoading: "Đang chuẩn bị…",
+  shopTitle: "Danh sách mua", shopSubtitle: "Shopping", shopDesc: "Tự tạo từ tủ lạnh",
+  shopNeed: "Cần ngay", shopSoon: "Sắp cần", shopExtra: "Tiện mua",
+  shopEmpty: "Không có gì cần mua", shopBought: "Đã mua", shopClear: "Xóa đã mua",
   grpLabels: { "すべて":"Tất cả","野菜":"Rau","きのこ":"Nấm","芋類":"Củ","魚介":"Hải sản","肉類":"Thịt","卵・乳":"Trứng/Sữa","調味料":"Gia vị","スパイス":"Spice","食用油":"Dầu ăn","缶詰":"Đồ hộp","レトルト":"Đóng gói","冷凍品":"Đông lạnh","飲み物":"Đồ uống" },
   locale: "vi-VN", nameSep: " · ",
 };
 
 // ── မြန်မာ ──────────────────────────────────────────────
 const my: T = {
-  navHome: "ပင်မ", navInventory: "ကုန်ပစ္စည်း", navAdd: "ထည့်ရန်", navLang: "ဘာသာ",
+  navHome: "ပင်မ", navInventory: "ကုန်ပစ္စည်း", navAdd: "ထည့်ရန်", navShopping: "ဝယ်ပါ", navLang: "ဘာသာ",
   catFridge: "ရေခဲသေတ္တာ", catFreezer: "အေးခဲ", catVegetable: "ဟင်းသီး", catPantry: "ပုံမှန်",
   homeSubtitle: "AI အစားအသောက်",
   homeTagline: "ကျန်ပစ္စည်းဖြင့် လွယ်ကူသောထမင်း",
@@ -287,6 +312,7 @@ const my: T = {
   homeGenerateDesc: "သင့်ပစ္စည်းများဖြင့် ယခုချက်ပြုတ်နိုင်သောစာရင်း",
   homeErrFetch: "ဒေတာတင်မရပါ",
   homeErrRecipe: "ချက်နည်းထုတ်မရပါ",
+  homeStatusGood: "အဆင်ပြေ", homeStatusWarn: "သတိပြု", homeStatusUrgent: "အရေးပေါ်",
   invSubtitle: "Inventory", invTitle: "သိုလှောင်ပစ္စည်း",
   invNItems: (n) => `${n} မျိုး`,
   invUrgent: (n) => `${n} ခု သတိပြုပါ!`,
@@ -319,13 +345,16 @@ const my: T = {
   addDayUnit: "ရက်", addPieceUnit: "ခု",
   recipeOpen: "▼ နည်းကြည့်ပါ", recipeClose: "▲ ပိတ်ပါ", recipeMissing: "လိုအပ်သည်:",
   demoTitle: "Demo ကြည့်ပါ", demoDesc: "နမူနာပစ္စည်းများထည့်ပြီး AI ချက်နည်းထုတ်ပါ", demoBtn: "🎮 Demo စတင်ပါ", demoLoading: "ပြင်ဆင်နေသည်…",
+  shopTitle: "ဝယ်ရမည့်စာရင်း", shopSubtitle: "Shopping", shopDesc: "ရေခဲသေတ္တာမှ အလိုအလျောက်",
+  shopNeed: "ယခုလိုအပ်", shopSoon: "မကြာမီ", shopExtra: "တစ်ပါတည်း",
+  shopEmpty: "ဝယ်စရာမရှိပါ", shopBought: "ဝယ်ပြီး", shopClear: "ရှင်းပါ",
   grpLabels: { "すべて":"အားလုံး","野菜":"ဟင်းသီး","きのこ":"မှိုများ","芋類":"အာလူး","魚介":"ငါးပိုး","肉類":"အသား","卵・乳":"ဥ/နို့","調味料":"အမွှေးအကြိုင်","スパイス":"ဆေးဖက်","食用油":"ဆီ","缶詰":"သင်တိုင်း","レトルト":"ထုပ်ပိုး","冷凍品":"အေးခဲ","飲み物":"သောက်စရာ" },
   locale: "my-MM", nameSep: "、",
 };
 
 // ── नेपाली ──────────────────────────────────────────────
 const ne: T = {
-  navHome: "होम", navInventory: "भण्डार", navAdd: "थप्नुस्", navLang: "भाषा",
+  navHome: "होम", navInventory: "भण्डार", navAdd: "थप्नुस्", navShopping: "किनमेल", navLang: "भाषा",
   catFridge: "फ्रिज", catFreezer: "फ्रिजर", catVegetable: "तरकारी", catPantry: "सामान्य",
   homeSubtitle: "AI खाना सहायक",
   homeTagline: "बचेको सामग्रीबाट छिटो खाना",
@@ -342,6 +371,7 @@ const ne: T = {
   homeGenerateDesc: "अहिलेनै पकाउन सकिने खाना सुझाव दिन्छ",
   homeErrFetch: "डेटा लोड भएन",
   homeErrRecipe: "रेसिपी बनाउन सकिएन",
+  homeStatusGood: "ठीक छ", homeStatusWarn: "ध्यान दिनुस्", homeStatusUrgent: "जरुरी",
   invSubtitle: "Inventory", invTitle: "भण्डार व्यवस्थापन",
   invNItems: (n) => `${n} वटा खाना`,
   invUrgent: (n) => `${n} वटाको म्याद सकिँदैछ!`,
@@ -374,13 +404,16 @@ const ne: T = {
   addDayUnit: "दिन", addPieceUnit: "वटा",
   recipeOpen: "▼ तरिका हेर्नुस्", recipeClose: "▲ बन्द गर्नुस्", recipeMissing: "चाहिन्छ:",
   demoTitle: "डेमो हेर्नुस्", demoDesc: "नमूना खाना थप्नुस् र AI रेसिपी स्वचालित बनाउनुस्", demoBtn: "🎮 डेमो सुरु", demoLoading: "तयार गर्दैछ…",
+  shopTitle: "किनमेल सूची", shopSubtitle: "Shopping", shopDesc: "फ्रिजबाट स्वचालित",
+  shopNeed: "अहिलेनै चाहिन्छ", shopSoon: "चाँडै चाहिन्छ", shopExtra: "पाइले ल्याउनुस्",
+  shopEmpty: "किन्ने कुरा छैन", shopBought: "किनियो", shopClear: "हटाउनुस्",
   grpLabels: { "すべて":"सबै","野菜":"तरकारी","きのこ":"च्याउ","芋類":"तरुल","魚介":"माछा","肉類":"मासु","卵・乳":"अण्डा/दूध","調味料":"मसला","スパイス":"मसला","食用油":"तेल","缶詰":"डब्बा","レトルト":"प्याकेट","冷凍品":"फ्रोजन","飲み物":"पेय" },
   locale: "ne-NP", nameSep: " · ",
 };
 
 // ── Indonesia ────────────────────────────────────────────
 const id: T = {
-  navHome: "Beranda", navInventory: "Stok", navAdd: "Tambah", navLang: "Bahasa",
+  navHome: "Beranda", navInventory: "Stok", navAdd: "Tambah", navShopping: "Belanja", navLang: "Bahasa",
   catFridge: "Kulkas", catFreezer: "Freezer", catVegetable: "Sayuran", catPantry: "Lemari",
   homeSubtitle: "Asisten Makanan AI",
   homeTagline: "Masak cepat dari bahan yang tersisa",
@@ -397,6 +430,7 @@ const id: T = {
   homeGenerateDesc: "Sarankan menu yang bisa dibuat sekarang",
   homeErrFetch: "Gagal memuat data",
   homeErrRecipe: "Gagal membuat resep",
+  homeStatusGood: "Aman", homeStatusWarn: "Perhatian", homeStatusUrgent: "Segera",
   invSubtitle: "Inventaris", invTitle: "Manajemen Stok",
   invNItems: (n) => `${n} bahan`,
   invUrgent: (n) => `${n} akan kadaluarsa!`,
@@ -429,13 +463,16 @@ const id: T = {
   addDayUnit: "hr", addPieceUnit: "pcs",
   recipeOpen: "▼ Lihat Langkah", recipeClose: "▲ Sembunyikan", recipeMissing: "Perlu:",
   demoTitle: "Coba Demo", demoDesc: "Tambahkan bahan contoh dan buat resep AI otomatis", demoBtn: "🎮 Mulai Demo", demoLoading: "Mempersiapkan…",
+  shopTitle: "Daftar Belanja", shopSubtitle: "Shopping", shopDesc: "Dibuat otomatis dari kulkas",
+  shopNeed: "Perlu Sekarang", shopSoon: "Hampir Habis", shopExtra: "Sekalian",
+  shopEmpty: "Tidak ada yang perlu dibeli", shopBought: "Sudah beli", shopClear: "Hapus selesai",
   grpLabels: { "すべて":"Semua","野菜":"Sayuran","きのこ":"Jamur","芋類":"Umbi","魚介":"Seafood","肉類":"Daging","卵・乳":"Telur/Susu","調味料":"Bumbu","スパイス":"Rempah","食用油":"Minyak","缶詰":"Kaleng","レトルト":"Kemasan","冷凍品":"Beku","飲み物":"Minuman" },
   locale: "id-ID", nameSep: ", ",
 };
 
 // ── 中文（简体）─────────────────────────────────────────
 const zh: T = {
-  navHome: "首页", navInventory: "库存", navAdd: "添加", navLang: "语言",
+  navHome: "首页", navInventory: "库存", navAdd: "添加", navShopping: "购物", navLang: "语言",
   catFridge: "冷藏", catFreezer: "冷冻", catVegetable: "蔬菜室", catPantry: "常温",
   homeSubtitle: "AI 食物助手",
   homeTagline: "用剩余食材快速做饭",
@@ -452,6 +489,7 @@ const zh: T = {
   homeGenerateDesc: "推荐现在就能做的菜肴",
   homeErrFetch: "数据加载失败",
   homeErrRecipe: "食谱生成失败",
+  homeStatusGood: "一切正常", homeStatusWarn: "注意", homeStatusUrgent: "需要处理",
   invSubtitle: "库存", invTitle: "库存管理",
   invNItems: (n) => `共${n}件食材`,
   invUrgent: (n) => `${n}件即将过期!`,
@@ -484,13 +522,16 @@ const zh: T = {
   addDayUnit: "天", addPieceUnit: "个",
   recipeOpen: "▼ 查看步骤", recipeClose: "▲ 收起步骤", recipeMissing: "需要:",
   demoTitle: "试用演示", demoDesc: "添加示例食材，自动生成AI食谱", demoBtn: "🎮 开始演示", demoLoading: "准备中…",
+  shopTitle: "购物清单", shopSubtitle: "Shopping", shopDesc: "根据冰箱自动生成",
+  shopNeed: "立即需要", shopSoon: "即将用完", shopExtra: "顺便买",
+  shopEmpty: "没有需要购买的", shopBought: "已买", shopClear: "清除已完成",
   grpLabels: { "すべて":"全部","野菜":"蔬菜","きのこ":"蘑菇","芋類":"薯类","魚介":"海鲜","肉類":"肉类","卵・乳":"蛋/奶","調味料":"调味料","スパイス":"香料","食用油":"食用油","缶詰":"罐头","レトルト":"速食包","冷凍品":"冷冻","飲み物":"饮料" },
   locale: "zh-CN", nameSep: "・",
 };
 
 // ── 한국어 ───────────────────────────────────────────────
 const ko: T = {
-  navHome: "홈", navInventory: "재고", navAdd: "추가", navLang: "언어",
+  navHome: "홈", navInventory: "재고", navAdd: "추가", navShopping: "쇼핑", navLang: "언어",
   catFridge: "냉장", catFreezer: "냉동", catVegetable: "채소실", catPantry: "상온",
   homeSubtitle: "AI 식재료 관리",
   homeTagline: "남은 재료로 빠른 한 끼",
@@ -507,6 +548,7 @@ const ko: T = {
   homeGenerateDesc: "지금 바로 만들 수 있는 메뉴를 제안합니다",
   homeErrFetch: "데이터 로드 실패",
   homeErrRecipe: "레시피 생성 실패",
+  homeStatusGood: "이상 없음", homeStatusWarn: "주의", homeStatusUrgent: "확인 필요",
   invSubtitle: "Inventory", invTitle: "재고 관리",
   invNItems: (n) => `${n}개 식재료`,
   invUrgent: (n) => `만료 임박 ${n}개!`,
@@ -539,13 +581,16 @@ const ko: T = {
   addDayUnit: "일", addPieceUnit: "개",
   recipeOpen: "▼ 만드는 법 보기", recipeClose: "▲ 접기", recipeMissing: "필요:",
   demoTitle: "데모 체험", demoDesc: "샘플 재료를 추가하고 AI 레시피를 자동 생성합니다", demoBtn: "🎮 데모 시작", demoLoading: "준비 중…",
+  shopTitle: "쇼핑 목록", shopSubtitle: "Shopping", shopDesc: "냉장고에서 자동 생성",
+  shopNeed: "지금 필요", shopSoon: "곧 필요", shopExtra: "사는 김에",
+  shopEmpty: "살 것이 없습니다", shopBought: "구매함", shopClear: "완료 지우기",
   grpLabels: { "すべて":"전체","野菜":"채소","きのこ":"버섯","芋類":"감자류","魚介":"해산물","肉類":"육류","卵・乳":"달걀/유제품","調味料":"양념","スパイス":"향신료","食用油":"식용유","缶詰":"통조림","レトルト":"레토르트","冷凍品":"냉동","飲み物":"음료" },
   locale: "ko-KR", nameSep: "・",
 };
 
 // ── Português (Brasil) ──────────────────────────────────
 const pt: T = {
-  navHome: "Início", navInventory: "Estoque", navAdd: "Adicionar", navLang: "Idioma",
+  navHome: "Início", navInventory: "Estoque", navAdd: "Adicionar", navShopping: "Compras", navLang: "Idioma",
   catFridge: "Geladeira", catFreezer: "Freezer", catVegetable: "Legumes", catPantry: "Despensa",
   homeSubtitle: "Assistente de Alimentos IA",
   homeTagline: "Refeição rápida com o que sobrou",
@@ -562,6 +607,7 @@ const pt: T = {
   homeGenerateDesc: "Sugerir refeições que você pode fazer agora",
   homeErrFetch: "Erro ao carregar dados",
   homeErrRecipe: "Erro ao gerar receitas",
+  homeStatusGood: "Tudo certo", homeStatusWarn: "Atenção", homeStatusUrgent: "Urgente",
   invSubtitle: "Estoque", invTitle: "Gestão de Estoque",
   invNItems: (n) => `${n} alimentos`,
   invUrgent: (n) => `${n} vencendo!`,
@@ -594,13 +640,16 @@ const pt: T = {
   addDayUnit: "d", addPieceUnit: "un",
   recipeOpen: "▼ Ver Preparo", recipeClose: "▲ Ocultar", recipeMissing: "Necessário:",
   demoTitle: "Experimente o Demo", demoDesc: "Adicione ingredientes de exemplo e gere receitas AI automaticamente", demoBtn: "🎮 Iniciar Demo", demoLoading: "Preparando…",
+  shopTitle: "Lista de Compras", shopSubtitle: "Shopping", shopDesc: "Gerado automaticamente",
+  shopNeed: "Preciso Agora", shopSoon: "Logo Vai Acabar", shopExtra: "Já Que Vai",
+  shopEmpty: "Nada para comprar", shopBought: "Comprei", shopClear: "Limpar feitos",
   grpLabels: { "すべて":"Todos","野菜":"Vegetal","きのこ":"Cogumelo","芋類":"Tubérculo","魚介":"Frutos do Mar","肉類":"Carne","卵・乳":"Ovo/Leite","調味料":"Tempero","スパイス":"Especiaria","食用油":"Óleo","缶詰":"Conservas","レトルト":"Embalado","冷凍品":"Congelado","飲み物":"Bebidas" },
   locale: "pt-BR", nameSep: " · ",
 };
 
 // ── ภาษาไทย ──────────────────────────────────────────────
 const th: T = {
-  navHome: "หน้าหลัก", navInventory: "คลัง", navAdd: "เพิ่ม", navLang: "ภาษา",
+  navHome: "หน้าหลัก", navInventory: "คลัง", navAdd: "เพิ่ม", navShopping: "ช้อป", navLang: "ภาษา",
   catFridge: "ตู้เย็น", catFreezer: "ช่องแช่แข็ง", catVegetable: "ผักสด", catPantry: "ของแห้ง",
   homeSubtitle: "ผู้ช่วย AI ด้านอาหาร",
   homeTagline: "ทำอาหารเร็วจากวัตถุดิบที่เหลือ",
@@ -617,6 +666,7 @@ const th: T = {
   homeGenerateDesc: "แนะนำเมนูที่ทำได้ทันทีจากวัตถุดิบของคุณ",
   homeErrFetch: "โหลดข้อมูลไม่ได้",
   homeErrRecipe: "สร้างสูตรไม่ได้",
+  homeStatusGood: "ปกติ", homeStatusWarn: "ระวัง", homeStatusUrgent: "ด่วน",
   invSubtitle: "คลังวัตถุดิบ", invTitle: "จัดการคลัง",
   invNItems: (n) => `${n} รายการ`,
   invUrgent: (n) => `ใกล้หมดอายุ ${n} รายการ!`,
@@ -649,13 +699,16 @@ const th: T = {
   addDayUnit: "วัน", addPieceUnit: "ชิ้น",
   recipeOpen: "▼ ดูวิธีทำ", recipeClose: "▲ ปิด", recipeMissing: "ต้องการ:",
   demoTitle: "ลองดูเดโม", demoDesc: "เพิ่มวัตถุดิบตัวอย่างและสร้างสูตรอาหาร AI อัตโนมัติ", demoBtn: "🎮 เริ่มเดโม", demoLoading: "กำลังเตรียม…",
+  shopTitle: "รายการช้อปปิ้ง", shopSubtitle: "Shopping", shopDesc: "สร้างอัตโนมัติจากตู้เย็น",
+  shopNeed: "ต้องการทันที", shopSoon: "ใกล้หมด", shopExtra: "ซื้อตามทาง",
+  shopEmpty: "ไม่มีของที่ต้องซื้อ", shopBought: "ซื้อแล้ว", shopClear: "ล้างที่เสร็จ",
   grpLabels: { "すべて":"ทั้งหมด","野菜":"ผัก","きのこ":"เห็ด","芋類":"หัวมัน","魚介":"อาหารทะเล","肉類":"เนื้อสัตว์","卵・乳":"ไข่/นม","調味料":"เครื่องปรุง","スパイス":"เครื่องเทศ","食用油":"น้ำมัน","缶詰":"กระป๋อง","レトルト":"อาหารซอง","冷凍品":"แช่แข็ง","飲み物":"เครื่องดื่ม" },
   locale: "th-TH", nameSep: " · ",
 };
 
 // ── 繁體中文（台灣）─────────────────────────────────────
 const zhTW: T = {
-  navHome: "首頁", navInventory: "庫存", navAdd: "新增", navLang: "語言",
+  navHome: "首頁", navInventory: "庫存", navAdd: "新增", navShopping: "購物", navLang: "語言",
   catFridge: "冷藏", catFreezer: "冷凍", catVegetable: "蔬菜室", catPantry: "常溫",
   homeSubtitle: "AI 食材助手",
   homeTagline: "用剩餘食材輕鬆做飯",
@@ -672,6 +725,7 @@ const zhTW: T = {
   homeGenerateDesc: "推薦現在就能做的菜餚",
   homeErrFetch: "資料載入失敗",
   homeErrRecipe: "食譜生成失敗",
+  homeStatusGood: "一切正常", homeStatusWarn: "注意", homeStatusUrgent: "需要處理",
   invSubtitle: "庫存", invTitle: "庫存管理",
   invNItems: (n) => `共${n}件食材`,
   invUrgent: (n) => `${n}件即將到期!`,
@@ -704,6 +758,9 @@ const zhTW: T = {
   addDayUnit: "天", addPieceUnit: "個",
   recipeOpen: "▼ 查看步驟", recipeClose: "▲ 收起步驟", recipeMissing: "需要:",
   demoTitle: "試用示範", demoDesc: "新增範例食材，自動生成 AI 食譜", demoBtn: "🎮 開始示範", demoLoading: "準備中…",
+  shopTitle: "購物清單", shopSubtitle: "Shopping", shopDesc: "根據冰箱自動生成",
+  shopNeed: "立即需要", shopSoon: "即將用完", shopExtra: "順便買",
+  shopEmpty: "沒有需要購買的", shopBought: "已買", shopClear: "清除已完成",
   grpLabels: { "すべて":"全部","野菜":"蔬菜","きのこ":"菇類","芋類":"薯類","魚介":"海鮮","肉類":"肉類","卵・乳":"蛋/奶","調味料":"調味料","スパイス":"香料","食用油":"食用油","缶詰":"罐頭","レトルト":"即食包","冷凍品":"冷凍","飲み物":"飲料" },
   locale: "zh-TW", nameSep: "・",
 };

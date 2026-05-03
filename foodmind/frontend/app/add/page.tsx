@@ -48,9 +48,9 @@ function ConfirmModal({
 
         <div className="space-y-2 mb-5">
           {list.map((item, idx) => (
-            <div key={idx} className={`rounded-2xl p-3 border transition-colors ${item.checked ? "border-emerald-300 bg-emerald-50" : "border-gray-100 bg-gray-50"}`}>
+            <div key={idx} className={`rounded-2xl p-3 border transition-colors ${item.checked ? "border-amber-300 bg-amber-50" : "border-gray-100 bg-gray-50"}`}>
               <div className="flex items-center gap-2 mb-2">
-                <input type="checkbox" checked={item.checked} onChange={() => toggle(idx)} className="w-4 h-4 accent-emerald-600" />
+                <input type="checkbox" checked={item.checked} onChange={() => toggle(idx)} className="w-4 h-4 accent-amber-500" />
                 <span className="font-semibold text-gray-800 flex-1 text-sm">{item.name}</span>
               </div>
               {item.checked && (
@@ -89,7 +89,7 @@ function ConfirmModal({
           <button
             onClick={() => onConfirm(checked)}
             disabled={checked.length === 0}
-            className="flex-1 py-3 rounded-2xl bg-emerald-700 text-white text-sm font-bold shadow-md shadow-emerald-200 disabled:opacity-40"
+            className="flex-1 py-3 rounded-2xl bg-amber-600 text-white text-sm font-bold shadow-md shadow-amber-200 disabled:opacity-40"
           >
             {t.addModalSave(checked.length)}
           </button>
@@ -187,7 +187,7 @@ export default function AddPage() {
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gray-50 pb-28">
       <div className="gradient-header px-5 pt-12 pb-8">
-        <p className="text-emerald-300 text-[10px] uppercase tracking-widest mb-1">{t.addSubtitle}</p>
+        <p className="text-white/60 text-[10px] uppercase tracking-widest mb-1">{t.addSubtitle}</p>
         <h1 className="text-white text-2xl font-bold">{t.addTitle}</h1>
       </div>
 
@@ -196,7 +196,7 @@ export default function AddPage() {
         <div className="bg-white rounded-2xl p-1 card-shadow flex gap-1 mb-5">
           {(["list", "manual", "camera"] as Mode[]).map((m) => (
             <button key={m} onClick={() => setMode(m)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${mode === m ? "bg-emerald-700 text-white shadow-sm" : "text-gray-400"}`}>
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${mode === m ? "bg-amber-600 text-white shadow-sm" : "text-gray-400"}`}>
               {m === "list" ? t.addModeList : m === "manual" ? t.addModeManual : t.addModeCamera}
             </button>
           ))}
@@ -210,14 +210,14 @@ export default function AddPage() {
               <input type="text" placeholder={t.addSearch} value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full border border-gray-200 rounded-2xl pl-9 pr-4 py-3 text-sm bg-white
-                           focus:outline-none focus:ring-2 focus:ring-emerald-300 card-shadow" />
+                           focus:outline-none focus:ring-2 focus:ring-amber-300 card-shadow" />
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {GROUPS.map((g) => (
                 <button key={g.name} onClick={() => setGroup(g.name)}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    activeGroup === g.name ? "bg-emerald-700 text-white" : "bg-white text-gray-500 border border-gray-200"
+                    activeGroup === g.name ? "bg-amber-600 text-white" : "bg-white text-gray-500 border border-gray-200"
                   }`}>
                   {g.emoji} {t.grpLabels[g.name] ?? g.name}
                 </button>
@@ -230,7 +230,7 @@ export default function AddPage() {
                 return (
                   <button key={item.name} onClick={() => toggleItem(item)}
                     className={`rounded-2xl p-3 text-center text-xs font-medium transition-all border ${
-                      isSelected ? "bg-emerald-600 text-white border-emerald-600 shadow-md" : "bg-white text-gray-700 border-gray-100 card-shadow"
+                      isSelected ? "bg-amber-500 text-white border-amber-500 shadow-md" : "bg-white text-gray-700 border-gray-100 card-shadow"
                     }`}>
                     <span className="block text-xl mb-0.5">{item.groupEmoji}</span>
                     <span className="leading-tight line-clamp-2">{item.name}</span>
@@ -255,14 +255,14 @@ export default function AddPage() {
                 <label className="text-xs font-semibold text-gray-500 block mb-1.5">{t.addNameLabel}</label>
                 <input type="text" placeholder={t.addNamePlaceholder} value={form.name}
                   onChange={(e) => setField("name", e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 block mb-1.5">{t.addStorageLabel}</label>
                 <div className="flex gap-2">
                   {CATEGORY_OPTIONS.map((c) => (
                     <button key={c.value} type="button" onClick={() => setField("category", c.value)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm border font-medium transition-all ${form.category === c.value ? "bg-emerald-700 text-white border-emerald-700" : "bg-white text-gray-500 border-gray-200"}`}>
+                      className={`flex-1 py-2.5 rounded-xl text-sm border font-medium transition-all ${form.category === c.value ? "bg-amber-600 text-white border-emerald-700" : "bg-white text-gray-500 border-gray-200"}`}>
                       <span className="block text-base">{c.icon}</span>{c.label}
                     </button>
                   ))}
@@ -273,18 +273,18 @@ export default function AddPage() {
                   <label className="text-xs font-semibold text-gray-500 block mb-1.5">{t.addQtyLabel}</label>
                   <input type="number" min={1} value={form.quantity}
                     onChange={(e) => setField("quantity", Number(e.target.value))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
                 </div>
                 <div className="flex-1">
                   <label className="text-xs font-semibold text-gray-500 block mb-1.5">{t.addExpiryLabel}</label>
                   <input type="number" min={1} value={form.expiryDays}
                     onChange={(e) => setField("expiryDays", Number(e.target.value))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
                 </div>
               </div>
             </div>
             <button type="submit" disabled={submitting}
-              className="w-full py-4 bg-emerald-700 text-white rounded-2xl font-bold text-sm shadow-md shadow-emerald-200 disabled:opacity-40">
+              className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold text-sm shadow-md shadow-amber-200 disabled:opacity-40">
               {submitting ? t.addSubmitting : t.addSave}
             </button>
           </form>
@@ -301,7 +301,7 @@ export default function AddPage() {
               <input ref={fileRef} type="file" accept="image/*" capture="environment"
                 onChange={handleImageChange} className="hidden" />
               <button onClick={() => fileRef.current?.click()} disabled={analyzing}
-                className="w-full py-4 bg-emerald-700 text-white rounded-2xl font-bold text-sm shadow-md shadow-emerald-200 disabled:opacity-50">
+                className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold text-sm shadow-md shadow-amber-200 disabled:opacity-50">
                 {analyzing ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block" />
@@ -325,11 +325,11 @@ export default function AddPage() {
       {/* 一括追加バー */}
       {mode === "list" && selected.length > 0 && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-40">
-          <div className="bg-emerald-700 text-white rounded-2xl px-5 py-3 flex items-center justify-between card-shadow-md">
+          <div className="bg-amber-600 text-white rounded-2xl px-5 py-3 flex items-center justify-between card-shadow-md">
             <span className="text-sm font-semibold">{t.addBarSelected(selected.length)}</span>
             <div className="flex gap-2">
               <button onClick={() => setSelected([])} className="text-xs text-emerald-200 px-2 py-1">{t.addBarClear}</button>
-              <button onClick={openMasterConfirm} className="text-xs bg-white text-emerald-700 font-bold px-4 py-1.5 rounded-xl">
+              <button onClick={openMasterConfirm} className="text-xs bg-white text-amber-700 font-bold px-4 py-1.5 rounded-xl">
                 {t.addBarAdd}
               </button>
             </div>

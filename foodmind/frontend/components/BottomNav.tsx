@@ -11,7 +11,8 @@ export default function BottomNav() {
   const TABS = [
     { href: "/",          label: t.navHome,      icon: "🏠" },
     { href: "/inventory", label: t.navInventory, icon: "❄️" },
-    { href: "/add",       label: t.navAdd,       icon: "🛒" },
+    { href: "/add",       label: t.navAdd,       icon: "➕" },
+    { href: "/shopping",  label: t.navShopping,  icon: "🛒" },
   ];
 
   return (
@@ -32,11 +33,11 @@ export default function BottomNav() {
               <span className={`text-xl transition-transform ${active ? "scale-110" : "scale-100 opacity-50"}`}>
                 {tab.icon}
               </span>
-              <span className={`text-[10px] font-medium ${active ? "text-emerald-700" : "text-gray-400"}`}>
+              <span className={`text-[10px] font-medium ${active ? "text-amber-700" : "text-gray-400"}`}>
                 {tab.label}
               </span>
               {active && (
-                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-600" />
+                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-600" />
               )}
             </Link>
           );

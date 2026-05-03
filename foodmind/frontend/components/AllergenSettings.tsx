@@ -33,7 +33,7 @@ export default function AllergenSettings() {
                    bg-white border border-amber-200 shadow-md rounded-2xl
                    px-3 py-2 text-xs font-bold text-amber-700"
       >
-        ⚠️ アレルゲン
+        🚫 除外食材
         {count > 0 && (
           <span className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
             {count}
@@ -48,14 +48,14 @@ export default function AllergenSettings() {
                onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-gray-100">
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
-              <h2 className="font-bold text-lg text-gray-800">アレルゲン設定</h2>
-              <p className="text-xs text-gray-400 mt-1">除外したいアレルゲンを選択してください</p>
+              <h2 className="font-bold text-lg text-gray-800">食べられないものを選ぼう</h2>
+              <p className="text-xs text-gray-400 mt-1">入っていたら食べられないものをタップしてください</p>
             </div>
 
             <div className="overflow-y-auto flex-1 p-5 space-y-5">
               <div>
                 <p className="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">
-                  義務表示（10品目）
+                  特定原材料（必須 10品目）
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {MANDATORY_ALLERGENS.map((a) => {
@@ -81,7 +81,7 @@ export default function AllergenSettings() {
 
               <div>
                 <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-2">
-                  推奨表示（18品目）
+                  気になる食材（任意 18品目）
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {RECOMMENDED_ALLERGENS.map((a) => {
@@ -111,7 +111,7 @@ export default function AllergenSettings() {
                 onClick={() => setOpen(false)}
                 className="w-full py-3 rounded-2xl bg-amber-600 text-white font-bold"
               >
-                設定を保存 {count > 0 ? `（${count}件除外中）` : ""}
+                保存する {count > 0 ? `（${count}品目を除外）` : ""}
               </button>
             </div>
           </div>
