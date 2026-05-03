@@ -10,7 +10,12 @@
 
 @layer utilities {
   .gradient-header {
-    background: linear-gradient(145deg, #b45309 0%, #d97706 55%, #f59e0b 100%);
+    background-image:
+      radial-gradient(ellipse at 15% 90%, rgba(255,255,255,0.22) 0%, transparent 48%),
+      radial-gradient(ellipse at 88% 8%,  rgba(255,255,255,0.16) 0%, transparent 48%),
+      radial-gradient(rgba(255,255,255,0.13) 1.5px, transparent 1.5px),
+      linear-gradient(135deg, #ff6348 0%, #ff9f43 52%, #ffd32a 100%);
+    background-size: 100% 100%, 100% 100%, 22px 22px, 100% 100%;
   }
   .card-shadow {
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
