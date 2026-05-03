@@ -31,8 +31,8 @@ export default function QRShare() {
             className="bg-white rounded-3xl p-6 w-full max-w-xs text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-bold text-lg text-gray-800 mb-1">アプリをシェア</h2>
-            <p className="text-xs text-gray-400 mb-4">このQRコードを読み取ってください</p>
+            <h2 className="font-bold text-lg text-gray-800 mb-1">家族や友だちに教えてあげよう</h2>
+            <p className="text-xs text-gray-400 mb-4">カメラでかざすだけ！</p>
 
             <div className="bg-white p-3 rounded-2xl border border-gray-100 inline-block">
               {url && (
@@ -46,14 +46,14 @@ export default function QRShare() {
 
             <p className="text-xs text-gray-500 mt-3 break-all">{url}</p>
             <p className="text-xs text-amber-600 mt-2">
-              ※ 同じWi-Fiでご利用ください
+              同じWi-Fiでひらけます
             </p>
 
             <button
               onClick={() => setOpen(false)}
               className="mt-4 w-full py-3 rounded-2xl bg-amber-600 text-white font-bold"
             >
-              閉じる
+              とじる
             </button>
           </div>
         </div>

@@ -4,11 +4,13 @@ import { useState } from "react";
 import type { Recipe } from "@/lib/api";
 import { useT } from "@/lib/LangContext";
 
-const TYPE_CONFIG = {
-  節約: { color: "bg-blue-100 text-blue-700",     icon: "💰" },
-  時短: { color: "bg-orange-100 text-orange-700", icon: "⚡" },
-  健康: { color: "bg-emerald-100 text-emerald-700", icon: "🥗" },
-} as const;
+const TYPE_CONFIG: Record<string, { color: string; icon: string }> = {
+  時短:     { color: "bg-orange-100 text-orange-700",   icon: "⚡" },
+  バランス: { color: "bg-emerald-100 text-emerald-700", icon: "🥗" },
+  アレンジ: { color: "bg-purple-100 text-purple-700",   icon: "✨" },
+  節約:     { color: "bg-blue-100 text-blue-700",       icon: "💰" },
+  健康:     { color: "bg-emerald-100 text-emerald-700", icon: "🥗" },
+};
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   簡単: "text-emerald-600",
@@ -19,7 +21,7 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 export default function RecipeCard({ recipe, index }: { recipe: Recipe; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const t = useT();
-  const cfg = TYPE_CONFIG[recipe.type];
+  const cfg = TYPE_CONFIG[recipe.type] ?? { color: "bg-gray-100 text-gray-600", icon: "🍴" };
 
   return (
     <div

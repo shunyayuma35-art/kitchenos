@@ -34,7 +34,7 @@ export async function generateRecipes(items: string[], allItems?: string[], alle
 条件：
 - 優先食材を必ず使う
 - 不足材料は代替案を提示する
-- 「節約」「時短」「健康」の3種類を1つずつ
+- 「時短」「バランス」「アレンジ」の3種類を1つずつ
 - 現実的な家庭料理レベル
 - 調理手順は4〜6ステップで具体的に
 - 調理時間と難易度も含める
@@ -44,7 +44,7 @@ export async function generateRecipes(items: string[], allItems?: string[], alle
 [
   {
     "title": "レシピ名",
-    "type": "節約 | 時短 | 健康",
+    "type": "時短 | バランス | アレンジ",
     "cookTime": "15分",
     "difficulty": "簡単 | 普通 | 本格",
     "ingredients": ["使用食材（分量付き）"],

@@ -211,7 +211,10 @@ export default function Home() {
 
         {/* ── レシピ ── */}
         <section>
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">{t.homeTodayTitle}</h2>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">{t.homeTodayTitle}</h2>
+          {recipes.length === 0 && (
+            <p className="text-xs text-gray-400 mb-3">{t.homeGenerateDesc}</p>
+          )}
 
           {recipes.length === 0 ? (
             <button

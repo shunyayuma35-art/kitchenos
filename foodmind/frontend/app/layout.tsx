@@ -4,6 +4,7 @@ import { Providers } from "@/components/Providers";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import AllergenSettings from "@/components/AllergenSettings";
 import QRShare from "@/components/QRShare";
+import Onboarding from "@/components/Onboarding";
 
 export const metadata: Metadata = {
   title: "パシャ食",
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html>
       <body className="bg-gray-50">
         <Providers>
+          <Onboarding />
           {children}
           <LanguageSwitcher />
           <AllergenSettings />
