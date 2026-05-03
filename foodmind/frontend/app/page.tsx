@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   fetchToday, fetchItems, generateRecipes, addItem,
-  clearAllItems, consumeItem, deleteItem, updateItem,
+  clearAllItems, consumeItem, deleteItem, updateItem, visionIdentify,
 } from "@/lib/api";
 import type { FoodItem, Recipe } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
@@ -35,9 +35,11 @@ export default function Home() {
   const [demoLoading, setDemoLoading]     = useState(false);
   const [error, setError]                 = useState("");
 
-  const [editingItem, setEditingItem] = useState<FoodItem | null>(null);
-  const [editQty, setEditQty]         = useState(1);
-  const [editDays, setEditDays]       = useState(3);
+  const [editingItem, setEditingItem]   = useState<FoodItem | null>(null);
+  const [editQty, setEditQty]           = useState(1);
+  const [editDays, setEditDays]         = useState(3);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const urgentItems  = priorityItems.filter((i) => i.expiryDays <= 2);
   const warningItems = priorityItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 5);
@@ -117,6 +119,31 @@ export default function Home() {
     await updateItem(editingItem.id, { quantity: editQty, expiryDays: editDays });
     setEditingItem(null);
     loadData();
+  }
+
+  async function handlePhotoRecipe(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoLoading(true);
+    setError("");
+    try {
+      const base64 = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res((r.result as string).split(",")[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+      const { items: identified } = await visionIdentify(base64, file.type as "image/jpeg" | "image/png" | "image/webp");
+      const names = identified.map((i) => i.name);
+      const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
+      const { recipes } = await generateRecipes(names, names, excluded);
+      setRecipes(recipes);
+    } catch {
+      setError("写真からの読み取りに失敗しました");
+    } finally {
+      setPhotoLoading(false);
+      if (cameraRef.current) cameraRef.current.value = "";
+    }
   }
 
   const isEmpty = !loading && allItems.length === 0;
@@ -231,20 +258,43 @@ export default function Home() {
           )}
 
           {recipes.length === 0 ? (
-            <button
-              onClick={() => handleGenerate()}
-              disabled={loadingRecipes || priorityItems.length === 0}
-              className="w-full py-5 rounded-2xl font-bold text-base transition-all
-                         bg-amber-600 text-white shadow-md shadow-amber-200
-                         disabled:opacity-40 disabled:shadow-none active:scale-98"
-            >
-              {loadingRecipes ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                  {t.homeGenerating}
-                </span>
-              ) : t.homeGenerate}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleGenerate()}
+                disabled={loadingRecipes || photoLoading || priorityItems.length === 0}
+                className="flex-1 py-5 rounded-2xl font-bold text-base transition-all
+                           bg-amber-600 text-white shadow-md shadow-amber-200
+                           disabled:opacity-40 disabled:shadow-none active:scale-98"
+              >
+                {loadingRecipes ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                    {t.homeGenerating}
+                  </span>
+                ) : t.homeGenerate}
+              </button>
+
+              <button
+                onClick={() => cameraRef.current?.click()}
+                disabled={loadingRecipes || photoLoading}
+                title="写真から献立を考える"
+                className="w-16 rounded-2xl bg-white border border-amber-200 text-amber-600
+                           shadow-md shadow-amber-100 text-2xl flex items-center justify-center
+                           disabled:opacity-40 active:scale-95 transition-all"
+              >
+                {photoLoading
+                  ? <span className="animate-spin w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full inline-block" />
+                  : "📸"}
+              </button>
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoRecipe}
+              />
+            </div>
           ) : (
             <div className="space-y-3">
               {recipes.map((r, i) => <RecipeCard key={i} recipe={r} index={i} />)}
