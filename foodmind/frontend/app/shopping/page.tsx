@@ -197,7 +197,7 @@ export default function ShoppingPage() {
       const msgs: Record<string, string> = {
         "not-allowed": "マイクが許可されていません。ブラウザのアドレスバー横の🔒からマイクを許可してください。",
         "no-speech": "声が検出されませんでした。もう少し大きな声でお試しください。",
-        "network": "ネットワークエラーです。インターネット接続を確認してください。",
+        "network": "音声入力はVercelなどのHTTPS本番環境でのみ動作します。\nテキスト入力をご利用ください。",
         "audio-capture": "マイクが見つかりません。端末のマイクを確認してください。",
         "aborted": "",
       };
@@ -376,10 +376,13 @@ export default function ShoppingPage() {
 
                 {/* エラー表示 */}
                 {voiceError && (
-                  <div className="flex items-start gap-2 mt-2 px-2 py-2 bg-amber-50 rounded-xl">
-                    <span className="text-amber-500 text-sm shrink-0">⚠️</span>
-                    <p className="text-xs text-amber-700 leading-relaxed">{voiceError}</p>
-                    <button onClick={() => setVoiceError(null)} className="text-amber-400 text-sm ml-auto shrink-0">×</button>
+                  <div className="flex items-start gap-2 mt-2 px-3 py-2.5 bg-amber-50 border border-amber-100 rounded-xl">
+                    <span className="text-base shrink-0">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-xs text-amber-800 font-semibold mb-0.5">音声入力が使えません</p>
+                      <p className="text-xs text-amber-700 leading-relaxed whitespace-pre-line">{voiceError}</p>
+                    </div>
+                    <button onClick={() => setVoiceError(null)} className="text-amber-400 text-base ml-1 shrink-0 leading-none">×</button>
                   </div>
                 )}
 
