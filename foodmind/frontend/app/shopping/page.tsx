@@ -59,14 +59,6 @@ const STAPLES_BY_GROUP = [
   ]},
 ];
 
-type Priority = "need" | "soon";
-
-interface ShopEntry {
-  name: string;
-  priority: Priority;
-  expiryDays: number;
-}
-
 interface MemoItem {
   id: string;
   text: string;
@@ -113,14 +105,6 @@ export default function ShoppingPage() {
   useEffect(() => { load(); }, [load]);
 
   const inventoryNames = new Set(items.map((i) => i.name));
-
-  const urgentList: ShopEntry[] = items
-    .filter((i) => i.expiryDays <= 2)
-    .map((i) => ({ name: i.name, priority: "need", expiryDays: i.expiryDays }));
-
-  const soonList: ShopEntry[] = items
-    .filter((i) => i.expiryDays > 2 && i.expiryDays <= 7)
-    .map((i) => ({ name: i.name, priority: "soon", expiryDays: i.expiryDays }));
 
   const extraByGroup = STAPLES_BY_GROUP.map((g) => ({
     ...g,
@@ -182,38 +166,6 @@ export default function ShoppingPage() {
     setIsListening(false);
   }
 
-  function renderUrgentItem(entry: ShopEntry) {
-    const done = checked.has(entry.name);
-    const cfg = entry.priority === "need"
-      ? { ring: "border-red-100", dot: "bg-red-500" }
-      : { ring: "border-amber-100", dot: "bg-amber-400" };
-    return (
-      <button
-        key={entry.name}
-        onClick={() => toggle(entry.name)}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all text-left ${
-          done ? "bg-gray-100 border-gray-200 opacity-40" : `bg-white ${cfg.ring} card-shadow`
-        }`}
-      >
-        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-          done ? "bg-gray-400 border-gray-400" : `${cfg.dot} border-transparent`
-        }`}>
-          {done && <span className="text-white text-[8px] font-bold">✓</span>}
-        </span>
-        <span className={`font-semibold text-sm flex-1 ${done ? "line-through text-gray-400" : "text-gray-800"}`}>
-          {entry.name}
-        </span>
-        {!done && (
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-            entry.expiryDays <= 1 ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"
-          }`}>
-            あと{entry.expiryDays}日
-          </span>
-        )}
-      </button>
-    );
-  }
-
   const pendingMemos = memos.filter((m) => !m.done).length;
 
   return (
@@ -231,34 +183,6 @@ export default function ShoppingPage() {
           ))
         ) : (
           <>
-            {/* ── 今すぐ必要 ── */}
-            {urgentList.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.shopNeed}</span>
-                  <span className="text-xs text-gray-400">{urgentList.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {urgentList.map((e) => renderUrgentItem(e))}
-                </div>
-              </section>
-            )}
-
-            {/* ── そろそろ ── */}
-            {soonList.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.shopSoon}</span>
-                  <span className="text-xs text-gray-400">{soonList.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {soonList.map((e) => renderUrgentItem(e))}
-                </div>
-              </section>
-            )}
-
             {/* ── 買い物メモ ── */}
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -419,7 +343,7 @@ export default function ShoppingPage() {
               </section>
             )}
 
-            {urgentList.length === 0 && soonList.length === 0 && extraByGroup.length === 0 && memos.length === 0 && (
+            {extraByGroup.length === 0 && memos.length === 0 && (
               <div className="bg-white rounded-2xl p-12 text-center card-shadow mt-4">
                 <p className="text-5xl mb-3">🛒</p>
                 <p className="text-gray-500 text-base font-semibold">{t.shopEmpty}</p>
