@@ -228,30 +228,33 @@ export default function AddPage() {
               ))}
             </div>
 
-            {/* 食材グリッド — 4列コンパクト */}
-            <div className="grid grid-cols-4 gap-1.5">
-              {filtered.map((item) => {
-                const isSelected = !!selected.find((s) => s.name === item.name);
-                return (
-                  <button key={item.name} onClick={() => toggleItem(item)}
-                    className={`relative rounded-xl py-2.5 px-1 text-center transition-all border active:scale-95 ${
-                      isSelected
-                        ? "bg-amber-500 text-white border-amber-400 shadow-sm"
-                        : "bg-white text-gray-700 border-gray-100 card-shadow"
-                    }`}>
-                    {isSelected && (
-                      <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full
-                                       text-amber-600 text-[9px] font-black flex items-center justify-center">✓</span>
-                    )}
-                    <span className="block text-lg leading-none mb-0.5">{item.groupEmoji}</span>
-                    <span className="text-[10px] leading-tight line-clamp-2 block">{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {filtered.length === 0 && (
-              <p className="text-center text-gray-400 py-8 text-sm">{t.addNotFound(query)}</p>
+            {/* 食材グリッド — カテゴリ選択 or 検索時のみ表示 */}
+            {(activeGroup !== "すべて" || query.trim() !== "") && (
+              <>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {filtered.map((item) => {
+                    const isSelected = !!selected.find((s) => s.name === item.name);
+                    return (
+                      <button key={item.name} onClick={() => toggleItem(item)}
+                        className={`relative rounded-xl py-2.5 px-1 text-center transition-all border active:scale-95 ${
+                          isSelected
+                            ? "bg-amber-500 text-white border-amber-400 shadow-sm"
+                            : "bg-white text-gray-700 border-gray-100 card-shadow"
+                        }`}>
+                        {isSelected && (
+                          <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full
+                                           text-amber-600 text-[9px] font-black flex items-center justify-center">✓</span>
+                        )}
+                        <span className="block text-lg leading-none mb-0.5">{item.groupEmoji}</span>
+                        <span className="text-[10px] leading-tight line-clamp-2 block">{item.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {filtered.length === 0 && (
+                  <p className="text-center text-gray-400 py-8 text-sm">{t.addNotFound(query)}</p>
+                )}
+              </>
             )}
           </div>
         )}
