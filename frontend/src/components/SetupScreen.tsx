@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type { Language, StationType } from "../types";
 import { LANGUAGE_NAMES, t } from "../i18n/translations";
-import { ChefIcon, TableIcon, CookingIcon, PlatingIcon, PrepIcon, AdminIcon } from "./StationIcons";
+import { ChefIcon, CookingIcon, PlatingIcon, PrepIcon, AdminIcon } from "./StationIcons";
 
 interface Props {
-  onStart: (station: StationType, language: Language, staffName: string, tableNum?: string) => void;
+  onStart: (station: StationType, language: Language, staffName: string) => void;
 }
 
 const KITCHEN_STATIONS: { value: StationType; icon: React.ReactNode; label: string; color: string; glow: string }[] = [
@@ -17,14 +17,12 @@ const KITCHEN_STATIONS: { value: StationType; icon: React.ReactNode; label: stri
 const LANGS: Language[] = ["ja", "zh", "th", "en", "vi", "ne", "id", "my"];
 
 export default function SetupScreen({ onStart }: Props) {
-  const [mode, setMode] = useState<"kitchen" | "table" | null>(null);
+  const [mode, setMode] = useState<"kitchen" | null>(null);
   const [station, setStation] = useState<StationType | null>(null);
   const [language, setLanguage] = useState<Language>("ja");
   const [staffName, setStaffName] = useState("");
-  const [tableNumber, setTableNumber] = useState("");
 
   const canStartKitchen = station && staffName.trim().length > 0;
-  const canStartTable   = tableNumber.trim().length > 0;
 
   /* ── モード未選択：ホーム画面 ── */
   if (!mode) {
@@ -49,14 +47,6 @@ export default function SetupScreen({ onStart }: Props) {
               <div style={s.modeArrow}>→</div>
             </button>
 
-            <button style={s.modeCard} onClick={() => setMode("table")}>
-              <div style={{ ...s.modeIconBg, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)" }}>
-                <TableIcon size={56} />
-              </div>
-              <div style={s.modeName}>テーブルゲスト</div>
-              <div style={s.modeSub}>お客様向け注文状況</div>
-              <div style={s.modeArrow}>→</div>
-            </button>
           </div>
 
           {/* ステータスチップ */}
@@ -64,40 +54,6 @@ export default function SetupScreen({ onStart }: Props) {
             <span style={s.statusChip}>🟢 システム稼働中</span>
             <span style={s.statusChip}>🔒 ローカル専用</span>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── テーブル設定 ── */
-  if (mode === "table") {
-    return (
-      <div style={s.root}>
-        <div style={s.card} className="fade-up">
-          <button style={s.backBtn} onClick={() => setMode(null)}>← 戻る</button>
-          <div style={s.cardIcon}><TableIcon size={52} /></div>
-          <h2 style={s.cardTitle}>テーブル設定</h2>
-
-          <LangSelector language={language} onChange={setLanguage} />
-
-          <div style={s.field}>
-            <label style={s.label}>{t(language, "tableNumber")}</label>
-            <input
-              type="text"
-              placeholder="例: A1, 3, カウンター1"
-              value={tableNumber}
-              onChange={(e) => setTableNumber(e.target.value)}
-            />
-          </div>
-
-          <button
-            className="btn-primary"
-            style={{ width: "100%", marginTop: 8 }}
-            disabled={!canStartTable}
-            onClick={() => canStartTable && onStart("table", language, "", tableNumber.trim())}
-          >
-            表示開始
-          </button>
         </div>
       </div>
     );

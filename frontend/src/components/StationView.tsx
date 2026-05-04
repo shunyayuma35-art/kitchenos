@@ -26,7 +26,7 @@ interface Props {
   onReset: () => void;
 }
 
-type Tab = "orders" | "prep" | "log" | "new_order" | "menus" | "guide" | "photo" | "dashboard" | "setup" | "inventory" | "history" | "now";
+type Tab = "orders" | "prep" | "log" | "new_order" | "menus" | "guide" | "photo" | "dashboard" | "setup" | "inventory" | "history" | "now" | "qr";
 
 const STATION_COLOR: Record<StationType, string> = {
   cooking: "#f39c12",
@@ -106,6 +106,7 @@ export default function StationView({
     { key: "setup",     label: `⚙ ${t(language, "setup")}`,      show: station === "admin" },
     { key: "now",       label: t(language, "nowDashboardTab"),     show: true },
     { key: "history",   label: t(language, "cookingHistoryTab"),   show: station === "admin" },
+    { key: "qr",        label: "🔗 QR生成",                        show: station === "admin" },
     { key: "guide",     label: "📋 作業手順",                      show: true },
   ];
   const TABS = ALL_TABS.filter((tb) => tb.show);
@@ -214,6 +215,7 @@ export default function StationView({
         {tab === "history" && (
           <CookingHistoryView lang={language} />
         )}
+        {tab === "qr" && <QRGenerator />}
         {tab === "guide" && (
           <WorkGuide station={station} language={language} />
         )}
@@ -221,6 +223,150 @@ export default function StationView({
     </div>
   );
 }
+
+// ── QRコード生成（管理者専用）────────────────────────────
+function QRGenerator() {
+  const [tables, setTables] = useState<string[]>(["A1", "A2", "A3", "カウンター1", "カウンター2"]);
+  const [input, setInput] = useState("");
+  const origin = window.location.origin;
+
+  const add = () => {
+    const v = input.trim();
+    if (v && !tables.includes(v)) setTables((p) => [...p, v]);
+    setInput("");
+  };
+
+  const remove = (t: string) => setTables((p) => p.filter((x) => x !== t));
+
+  return (
+    <div style={qr.root}>
+      <h2 style={qr.title}>🔗 テーブルQRコード生成</h2>
+      <p style={qr.desc}>
+        各テーブルのQRコードを印刷してテーブルに置いてください。<br />
+        お客様がスマホで読み取るとそのテーブルの注文画面が開きます。
+      </p>
+
+      {/* テーブル追加 */}
+      <div style={qr.addRow}>
+        <input
+          style={qr.input}
+          placeholder="テーブル名を追加（例: B1、テラス1）"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+        />
+        <button style={qr.addBtn} onClick={add}>追加</button>
+      </div>
+
+      {/* QRカード一覧 */}
+      <div style={qr.grid}>
+        {tables.map((tbl) => {
+          const url = `${origin}/?table=${encodeURIComponent(tbl)}`;
+          const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+          return (
+            <div key={tbl} style={qr.card}>
+              <button style={qr.del} onClick={() => remove(tbl)} title="削除">✕</button>
+              <div style={qr.tblName}>{tbl}</div>
+              <img src={qrSrc} alt={`QR ${tbl}`} style={qr.qrImg} />
+              <div style={qr.urlText}>{url}</div>
+              <button style={qr.printBtn} onClick={() => window.open(qrSrc, "_blank")}>
+                🖨️ 印刷用を開く
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <p style={qr.hint}>
+        ※ QRコードはネット接続時のみ表示されます（api.qrserver.com — 無料）。<br />
+        「印刷用を開く」→ブラウザの印刷機能でPDF保存・印刷できます。
+      </p>
+    </div>
+  );
+}
+
+const qr: Record<string, React.CSSProperties> = {
+  root: { padding: "4px 0 40px" },
+  title: { fontSize: "1.3rem", fontWeight: 800, color: "#2d2013", marginBottom: 8 },
+  desc: { fontSize: "0.9rem", color: "#8c6f5a", lineHeight: 1.7, marginBottom: 20 },
+  addRow: { display: "flex", gap: 10, marginBottom: 24 },
+  input: {
+    flex: 1,
+    border: "1.5px solid rgba(200,140,100,0.3)",
+    borderRadius: 10,
+    padding: "10px 14px",
+    fontSize: "0.95rem",
+    background: "rgba(255,255,255,0.8)",
+    color: "#2d2013",
+    outline: "none",
+  },
+  addBtn: {
+    background: "linear-gradient(135deg,#ff8c42,#ff6b6b)",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "10px 22px",
+    fontWeight: 800,
+    fontSize: "0.95rem",
+    cursor: "pointer",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+    gap: 16,
+  },
+  card: {
+    background: "rgba(255,255,255,0.9)",
+    border: "1.5px solid rgba(255,180,120,0.3)",
+    borderRadius: 16,
+    padding: "16px 14px 14px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 10,
+    position: "relative",
+    boxShadow: "0 4px 16px rgba(200,100,60,0.08)",
+  },
+  del: {
+    position: "absolute",
+    top: 8,
+    right: 10,
+    background: "transparent",
+    border: "none",
+    color: "#c09080",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    fontWeight: 700,
+  },
+  tblName: { fontWeight: 900, fontSize: "1.15rem", color: "#2d2013" },
+  qrImg: { width: 160, height: 160, borderRadius: 8, border: "1px solid rgba(200,140,100,0.2)" },
+  urlText: {
+    fontSize: "0.7rem",
+    color: "#b09880",
+    wordBreak: "break-all",
+    textAlign: "center",
+    lineHeight: 1.4,
+  },
+  printBtn: {
+    background: "rgba(255,240,220,0.9)",
+    border: "1px solid rgba(255,160,80,0.3)",
+    borderRadius: 8,
+    padding: "7px 14px",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    color: "#c85a00",
+    cursor: "pointer",
+    width: "100%",
+  },
+  hint: {
+    marginTop: 24,
+    fontSize: "0.78rem",
+    color: "#b09880",
+    lineHeight: 1.7,
+    borderTop: "1px solid rgba(200,140,100,0.15)",
+    paddingTop: 16,
+  },
+};
 
 const styles: Record<string, React.CSSProperties> = {
   root: {

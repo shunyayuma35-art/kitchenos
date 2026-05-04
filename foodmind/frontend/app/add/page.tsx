@@ -298,43 +298,61 @@ export default function AddPage() {
               </div>
             )}
 
-            {/* カテゴリフィルター — 折り返し2行 */}
+            {/* カテゴリフィルター — 折り返し表示 */}
             <div className="flex flex-wrap gap-1.5">
-              {GROUPS.map((g) => (
-                <button key={g.name} onClick={() => setGroup(g.name)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                    activeGroup === g.name
-                      ? "bg-amber-600 text-white shadow-sm"
-                      : "bg-white text-gray-500 border border-gray-200"
-                  }`}>
-                  {g.emoji} {t.grpLabels[g.name] ?? g.name}
-                </button>
-              ))}
+              {GROUPS.map((g, idx) => {
+                const anims = ["animate-fuwa-fuwa", "animate-yura-yura", "animate-puru-puru"];
+                const animClass = anims[idx % 3];
+                return (
+                  <button key={g.name} onClick={() => setGroup(g.name)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border active:scale-95 ${
+                      activeGroup === g.name
+                        ? "bg-amber-600 text-white shadow-sm border-amber-600"
+                        : "bg-white text-gray-500 border-gray-200"
+                    }`}>
+                    <span
+                      className={`inline-block ${animClass}`}
+                      style={{ animationDelay: `${idx * 0.2}s` }}
+                    >{g.emoji}</span>
+                    {t.grpLabels[g.name] ?? g.name}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* 食材グリッド — カテゴリ選択 or 検索時のみ表示 */}
+            {/* 食材チップ — 買い物リスト風 */}
             {(activeGroup !== "すべて" || query.trim() !== "") && (
               <>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {filtered.map((item) => {
-                    const isSelected = !!selected.find((s) => s.name === item.name);
-                    return (
-                      <button key={item.name} onClick={() => toggleItem(item)}
-                        className={`relative rounded-xl py-2.5 px-1 text-center transition-all border active:scale-95 ${
-                          isSelected
-                            ? "bg-amber-500 text-white border-amber-400 shadow-sm"
-                            : "bg-white text-gray-700 border-gray-100 card-shadow"
-                        }`}>
-                        {isSelected && (
-                          <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full
-                                           text-amber-600 text-[9px] font-black flex items-center justify-center">✓</span>
-                        )}
-                        <span className="block text-lg leading-none mb-0.5">{item.groupEmoji}</span>
-                        <span className="text-[10px] leading-tight line-clamp-2 block">{item.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                {filtered.length > 0 && (
+                  <div className="bg-white rounded-2xl p-3 card-shadow">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-base">{GROUPS.find(g => g.name === activeGroup)?.emoji ?? "🔍"}</span>
+                      <span className="text-sm font-bold text-gray-700">
+                        {activeGroup === "すべて" ? `「${query}」の検索結果` : (t.grpLabels[activeGroup] ?? activeGroup)}
+                      </span>
+                      <span className="text-[11px] text-gray-400 ml-auto bg-gray-100 px-2 py-0.5 rounded-full">
+                        {filtered.length}品
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {filtered.map((item) => {
+                        const isSelected = !!selected.find((s) => s.name === item.name);
+                        return (
+                          <button key={item.name} onClick={() => toggleItem(item)}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all border active:scale-95 ${
+                              isSelected
+                                ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                                : "bg-orange-50 border-orange-100 text-gray-700"
+                            }`}>
+                            {isSelected && <span className="text-[10px] font-black">✓</span>}
+                            <span className="text-base leading-none">{item.groupEmoji}</span>
+                            <span>{item.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {filtered.length === 0 && (
                   <p className="text-center text-gray-400 py-8 text-sm">{t.addNotFound(query)}</p>
                 )}

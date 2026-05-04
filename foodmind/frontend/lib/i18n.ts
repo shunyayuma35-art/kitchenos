@@ -22,6 +22,7 @@ export interface T {
   navAdd: string;
   navShopping: string;
   navLang: string;
+  navShare: string;
   catFridge: string;
   catFreezer: string;
   catVegetable: string;
@@ -41,6 +42,10 @@ export interface T {
   homeGenerateDesc: string;
   homeErrFetch: string;
   homeErrRecipe: string;
+  homeUrgentLabel: string;
+  homeUrgentTap: string;
+  homeFridgeScore: string;
+  homeSavingsDesc: (n: number) => string;
   homeStatusGood: string;
   homeStatusWarn: string;
   homeStatusUrgent: string;
@@ -118,7 +123,7 @@ export interface T {
 
 // ── 日本語 ──────────────────────────────────────────────
 const ja: T = {
-  navHome: "ホーム", navInventory: "食材", navAdd: "追加", navShopping: "買い物", navLang: "言語",
+  navHome: "ホーム", navInventory: "食材", navAdd: "追加", navShopping: "買い物", navLang: "言語", navShare: "シェア",
   catFridge: "冷蔵", catFreezer: "冷凍", catVegetable: "野菜室", catPantry: "常温",
   homeSubtitle: "食材在庫 AI",
   homeTagline: "冷蔵庫を、おいしく使いきろう",
@@ -135,6 +140,8 @@ const ja: T = {
   homeGenerateDesc: "登録した食材とカメラ撮影で、今すぐ作れる献立を提案します。",
   homeErrFetch: "データ取得に失敗しました",
   homeErrRecipe: "レシピ生成に失敗しました",
+  homeUrgentLabel: "たすけて〜！", homeUrgentTap: "タップで今すぐレシピを考えてもらう →",
+  homeFridgeScore: "🥬 冷蔵庫スコア", homeSavingsDesc: (n) => `今日は${n}つの食材をムダにせず使えそう`,
   homeStatusGood: "問題なし", homeStatusWarn: "一部注意", homeStatusUrgent: "要確認",
   invSubtitle: "My Food", invTitle: "うちの食材",
   invNItems: (n) => `${n}件の食材`,
@@ -177,7 +184,7 @@ const ja: T = {
 
 // ── English ─────────────────────────────────────────────
 const en: T = {
-  navHome: "Home", navInventory: "Pantry", navAdd: "Add", navShopping: "Shop", navLang: "Lang",
+  navHome: "Home", navInventory: "Pantry", navAdd: "Add", navShopping: "Shop", navLang: "Lang", navShare: "Share",
   catFridge: "Fridge", catFreezer: "Freezer", catVegetable: "Veggie", catPantry: "Pantry",
   homeSubtitle: "AI Food Assistant",
   homeTagline: "Quick meals from leftover ingredients",
@@ -194,6 +201,8 @@ const en: T = {
   homeGenerateDesc: "Suggest meals you can cook right now",
   homeErrFetch: "Failed to load data",
   homeErrRecipe: "Failed to generate recipes",
+  homeUrgentLabel: "Help me!", homeUrgentTap: "Tap for recipe ideas →",
+  homeFridgeScore: "🥬 Fridge Score", homeSavingsDesc: (n) => `${n} items you can use today`,
   homeStatusGood: "All Good", homeStatusWarn: "Check Soon", homeStatusUrgent: "Needs Attention",
   invSubtitle: "Inventory", invTitle: "My Pantry",
   invNItems: (n) => `${n} items`,
@@ -236,7 +245,7 @@ const en: T = {
 
 // ── Tiếng Việt ──────────────────────────────────────────
 const vi: T = {
-  navHome: "Trang chủ", navInventory: "Kho", navAdd: "Thêm", navShopping: "Mua sắm", navLang: "Ngôn ngữ",
+  navHome: "Trang chủ", navInventory: "Kho", navAdd: "Thêm", navShopping: "Mua sắm", navLang: "Ngôn ngữ", navShare: "Chia sẻ",
   catFridge: "Tủ lạnh", catFreezer: "Ngăn đông", catVegetable: "Rau củ", catPantry: "Để khô",
   homeSubtitle: "Trợ lý AI",
   homeTagline: "Nấu nhanh từ nguyên liệu còn lại",
@@ -253,6 +262,8 @@ const vi: T = {
   homeGenerateDesc: "Gợi ý bữa ăn có thể nấu ngay",
   homeErrFetch: "Không tải được dữ liệu",
   homeErrRecipe: "Không tạo được công thức",
+  homeUrgentLabel: "Cứu với!", homeUrgentTap: "Nhấn để xem công thức →",
+  homeFridgeScore: "🥬 Điểm Tủ Lạnh", homeSavingsDesc: (n) => `${n} món có thể dùng hôm nay`,
   homeStatusGood: "Tốt", homeStatusWarn: "Chú ý", homeStatusUrgent: "Cần xem",
   invSubtitle: "Kho thực phẩm", invTitle: "Quản lý kho",
   invNItems: (n) => `${n} thực phẩm`,
@@ -295,7 +306,7 @@ const vi: T = {
 
 // ── မြန်မာ ──────────────────────────────────────────────
 const my: T = {
-  navHome: "ပင်မ", navInventory: "ကုန်ပစ္စည်း", navAdd: "ထည့်ရန်", navShopping: "ဝယ်ပါ", navLang: "ဘာသာ",
+  navHome: "ပင်မ", navInventory: "ကုန်ပစ္စည်း", navAdd: "ထည့်ရန်", navShopping: "ဝယ်ပါ", navLang: "ဘာသာ", navShare: "Share",
   catFridge: "ရေခဲသေတ္တာ", catFreezer: "အေးခဲ", catVegetable: "ဟင်းသီး", catPantry: "ပုံမှန်",
   homeSubtitle: "AI အစားအသောက်",
   homeTagline: "ကျန်ပစ္စည်းဖြင့် လွယ်ကူသောထမင်း",
@@ -312,6 +323,8 @@ const my: T = {
   homeGenerateDesc: "သင့်ပစ္စည်းများဖြင့် ယခုချက်ပြုတ်နိုင်သောစာရင်း",
   homeErrFetch: "ဒေတာတင်မရပါ",
   homeErrRecipe: "ချက်နည်းထုတ်မရပါ",
+  homeUrgentLabel: "ကူညီပါ!", homeUrgentTap: "ချက်နည်းကြည့်ရန် →",
+  homeFridgeScore: "🥬 ရေခဲဘူး Score", homeSavingsDesc: (n) => `ယနေ့ ${n} ခုသုံးနိုင်`,
   homeStatusGood: "အဆင်ပြေ", homeStatusWarn: "သတိပြု", homeStatusUrgent: "အရေးပေါ်",
   invSubtitle: "Inventory", invTitle: "သိုလှောင်ပစ္စည်း",
   invNItems: (n) => `${n} မျိုး`,
@@ -354,7 +367,7 @@ const my: T = {
 
 // ── नेपाली ──────────────────────────────────────────────
 const ne: T = {
-  navHome: "होम", navInventory: "भण्डार", navAdd: "थप्नुस्", navShopping: "किनमेल", navLang: "भाषा",
+  navHome: "होम", navInventory: "भण्डार", navAdd: "थप्नुस्", navShopping: "किनमेल", navLang: "भाषा", navShare: "सेयर",
   catFridge: "फ्रिज", catFreezer: "फ्रिजर", catVegetable: "तरकारी", catPantry: "सामान्य",
   homeSubtitle: "AI खाना सहायक",
   homeTagline: "बचेको सामग्रीबाट छिटो खाना",
@@ -371,6 +384,8 @@ const ne: T = {
   homeGenerateDesc: "अहिलेनै पकाउन सकिने खाना सुझाव दिन्छ",
   homeErrFetch: "डेटा लोड भएन",
   homeErrRecipe: "रेसिपी बनाउन सकिएन",
+  homeUrgentLabel: "बचाउनुस्!", homeUrgentTap: "रेसिपीको लागि थिच्नुस् →",
+  homeFridgeScore: "🥬 फ्रिज स्कोर", homeSavingsDesc: (n) => `आज ${n} वटा खाना जोगाउन सकिन्छ`,
   homeStatusGood: "ठीक छ", homeStatusWarn: "ध्यान दिनुस्", homeStatusUrgent: "जरुरी",
   invSubtitle: "Inventory", invTitle: "भण्डार व्यवस्थापन",
   invNItems: (n) => `${n} वटा खाना`,
@@ -413,7 +428,7 @@ const ne: T = {
 
 // ── Indonesia ────────────────────────────────────────────
 const id: T = {
-  navHome: "Beranda", navInventory: "Stok", navAdd: "Tambah", navShopping: "Belanja", navLang: "Bahasa",
+  navHome: "Beranda", navInventory: "Stok", navAdd: "Tambah", navShopping: "Belanja", navLang: "Bahasa", navShare: "Bagikan",
   catFridge: "Kulkas", catFreezer: "Freezer", catVegetable: "Sayuran", catPantry: "Lemari",
   homeSubtitle: "Asisten Makanan AI",
   homeTagline: "Masak cepat dari bahan yang tersisa",
@@ -430,6 +445,8 @@ const id: T = {
   homeGenerateDesc: "Sarankan menu yang bisa dibuat sekarang",
   homeErrFetch: "Gagal memuat data",
   homeErrRecipe: "Gagal membuat resep",
+  homeUrgentLabel: "Tolong!", homeUrgentTap: "Ketuk untuk resep →",
+  homeFridgeScore: "🥬 Skor Kulkas", homeSavingsDesc: (n) => `${n} bahan bisa dipakai hari ini`,
   homeStatusGood: "Aman", homeStatusWarn: "Perhatian", homeStatusUrgent: "Segera",
   invSubtitle: "Inventaris", invTitle: "Manajemen Stok",
   invNItems: (n) => `${n} bahan`,
@@ -472,7 +489,7 @@ const id: T = {
 
 // ── 中文（简体）─────────────────────────────────────────
 const zh: T = {
-  navHome: "首页", navInventory: "库存", navAdd: "添加", navShopping: "购物", navLang: "语言",
+  navHome: "首页", navInventory: "库存", navAdd: "添加", navShopping: "购物", navLang: "语言", navShare: "分享",
   catFridge: "冷藏", catFreezer: "冷冻", catVegetable: "蔬菜室", catPantry: "常温",
   homeSubtitle: "AI 食物助手",
   homeTagline: "用剩余食材快速做饭",
@@ -489,6 +506,8 @@ const zh: T = {
   homeGenerateDesc: "推荐现在就能做的菜肴",
   homeErrFetch: "数据加载失败",
   homeErrRecipe: "食谱生成失败",
+  homeUrgentLabel: "救救我！", homeUrgentTap: "点击获取食谱建议 →",
+  homeFridgeScore: "🥬 冰箱评分", homeSavingsDesc: (n) => `今天可以节约 ${n} 件食材`,
   homeStatusGood: "一切正常", homeStatusWarn: "注意", homeStatusUrgent: "需要处理",
   invSubtitle: "库存", invTitle: "库存管理",
   invNItems: (n) => `共${n}件食材`,
@@ -531,7 +550,7 @@ const zh: T = {
 
 // ── 한국어 ───────────────────────────────────────────────
 const ko: T = {
-  navHome: "홈", navInventory: "재고", navAdd: "추가", navShopping: "쇼핑", navLang: "언어",
+  navHome: "홈", navInventory: "재고", navAdd: "추가", navShopping: "쇼핑", navLang: "언어", navShare: "공유",
   catFridge: "냉장", catFreezer: "냉동", catVegetable: "채소실", catPantry: "상온",
   homeSubtitle: "AI 식재료 관리",
   homeTagline: "남은 재료로 빠른 한 끼",
@@ -548,6 +567,8 @@ const ko: T = {
   homeGenerateDesc: "지금 바로 만들 수 있는 메뉴를 제안합니다",
   homeErrFetch: "데이터 로드 실패",
   homeErrRecipe: "레시피 생성 실패",
+  homeUrgentLabel: "살려줘!", homeUrgentTap: "레시피 제안 →",
+  homeFridgeScore: "🥬 냉장고 점수", homeSavingsDesc: (n) => `오늘 ${n}개 식재료를 아낄 수 있어요`,
   homeStatusGood: "이상 없음", homeStatusWarn: "주의", homeStatusUrgent: "확인 필요",
   invSubtitle: "Inventory", invTitle: "재고 관리",
   invNItems: (n) => `${n}개 식재료`,
@@ -590,7 +611,7 @@ const ko: T = {
 
 // ── Português (Brasil) ──────────────────────────────────
 const pt: T = {
-  navHome: "Início", navInventory: "Estoque", navAdd: "Adicionar", navShopping: "Compras", navLang: "Idioma",
+  navHome: "Início", navInventory: "Estoque", navAdd: "Adicionar", navShopping: "Compras", navLang: "Idioma", navShare: "Compartilhar",
   catFridge: "Geladeira", catFreezer: "Freezer", catVegetable: "Legumes", catPantry: "Despensa",
   homeSubtitle: "Assistente de Alimentos IA",
   homeTagline: "Refeição rápida com o que sobrou",
@@ -607,6 +628,8 @@ const pt: T = {
   homeGenerateDesc: "Sugerir refeições que você pode fazer agora",
   homeErrFetch: "Erro ao carregar dados",
   homeErrRecipe: "Erro ao gerar receitas",
+  homeUrgentLabel: "Me ajuda!", homeUrgentTap: "Toque para sugestões de receita →",
+  homeFridgeScore: "🥬 Nota Geladeira", homeSavingsDesc: (n) => `${n} itens para usar hoje`,
   homeStatusGood: "Tudo certo", homeStatusWarn: "Atenção", homeStatusUrgent: "Urgente",
   invSubtitle: "Estoque", invTitle: "Gestão de Estoque",
   invNItems: (n) => `${n} alimentos`,
@@ -649,7 +672,7 @@ const pt: T = {
 
 // ── ภาษาไทย ──────────────────────────────────────────────
 const th: T = {
-  navHome: "หน้าหลัก", navInventory: "คลัง", navAdd: "เพิ่ม", navShopping: "ช้อป", navLang: "ภาษา",
+  navHome: "หน้าหลัก", navInventory: "คลัง", navAdd: "เพิ่ม", navShopping: "ช้อป", navLang: "ภาษา", navShare: "แชร์",
   catFridge: "ตู้เย็น", catFreezer: "ช่องแช่แข็ง", catVegetable: "ผักสด", catPantry: "ของแห้ง",
   homeSubtitle: "ผู้ช่วย AI ด้านอาหาร",
   homeTagline: "ทำอาหารเร็วจากวัตถุดิบที่เหลือ",
@@ -666,6 +689,8 @@ const th: T = {
   homeGenerateDesc: "แนะนำเมนูที่ทำได้ทันทีจากวัตถุดิบของคุณ",
   homeErrFetch: "โหลดข้อมูลไม่ได้",
   homeErrRecipe: "สร้างสูตรไม่ได้",
+  homeUrgentLabel: "ช่วยด้วย!", homeUrgentTap: "แตะเพื่อรับสูตรอาหาร →",
+  homeFridgeScore: "🥬 คะแนนตู้เย็น", homeSavingsDesc: (n) => `วันนี้ใช้ได้ ${n} รายการ`,
   homeStatusGood: "ปกติ", homeStatusWarn: "ระวัง", homeStatusUrgent: "ด่วน",
   invSubtitle: "คลังวัตถุดิบ", invTitle: "จัดการคลัง",
   invNItems: (n) => `${n} รายการ`,
@@ -708,7 +733,7 @@ const th: T = {
 
 // ── 繁體中文（台灣）─────────────────────────────────────
 const zhTW: T = {
-  navHome: "首頁", navInventory: "庫存", navAdd: "新增", navShopping: "購物", navLang: "語言",
+  navHome: "首頁", navInventory: "庫存", navAdd: "新增", navShopping: "購物", navLang: "語言", navShare: "分享",
   catFridge: "冷藏", catFreezer: "冷凍", catVegetable: "蔬菜室", catPantry: "常溫",
   homeSubtitle: "AI 食材助手",
   homeTagline: "用剩餘食材輕鬆做飯",
@@ -725,6 +750,8 @@ const zhTW: T = {
   homeGenerateDesc: "推薦現在就能做的菜餚",
   homeErrFetch: "資料載入失敗",
   homeErrRecipe: "食譜生成失敗",
+  homeUrgentLabel: "救救我！", homeUrgentTap: "點擊獲取食譜建議 →",
+  homeFridgeScore: "🥬 冰箱評分", homeSavingsDesc: (n) => `今天可以節約 ${n} 件食材`,
   homeStatusGood: "一切正常", homeStatusWarn: "注意", homeStatusUrgent: "需要處理",
   invSubtitle: "庫存", invTitle: "庫存管理",
   invNItems: (n) => `共${n}件食材`,

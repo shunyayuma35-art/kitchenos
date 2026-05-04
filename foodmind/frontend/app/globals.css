@@ -68,3 +68,28 @@
   animation: veggie-bounce 2.2s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
   transform-origin: 50% 100%;
 }
+
+/* 🟢ふわふわ（元気・good） */
+@keyframes fuwa-fuwa {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30%       { transform: translateY(-10px) rotate(-4deg); }
+  60%       { transform: translateY(-5px) rotate(3deg); }
+}
+/* 🟡ゆらゆら（そろそろ・warn） */
+@keyframes yura-yura {
+  0%, 100% { transform: rotate(0deg); }
+  25%       { transform: rotate(-10deg); }
+  75%       { transform: rotate(10deg); }
+}
+/* 🔴ぷるぷる（たすけて・urgent） */
+@keyframes puru-puru {
+  0%, 100% { transform: translateX(0)   scaleX(1)    scaleY(1); }
+  15%       { transform: translateX(-5px) scaleX(0.92) scaleY(1.08); }
+  35%       { transform: translateX(5px)  scaleX(1.08) scaleY(0.92); }
+  55%       { transform: translateX(-3px) scaleX(0.96) scaleY(1.04); }
+  75%       { transform: translateX(3px)  scaleX(1.04) scaleY(0.96); }
+}
+
+.animate-fuwa-fuwa { animation: fuwa-fuwa 3s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-yura-yura { animation: yura-yura 1.4s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-puru-puru { animation: puru-puru 0.55s ease-in-out infinite; transform-origin: 50% 50%; }

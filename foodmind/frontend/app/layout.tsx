@@ -3,7 +3,6 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import AllergenSettings from "@/components/AllergenSettings";
-import QRShare from "@/components/QRShare";
 import Onboarding from "@/components/Onboarding";
 
 export const metadata: Metadata = {
@@ -20,7 +19,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <LanguageSwitcher />
           <AllergenSettings />
-          <QRShare />
         </Providers>
       </body>
     </html>

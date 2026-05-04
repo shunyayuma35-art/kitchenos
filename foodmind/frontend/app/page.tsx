@@ -178,7 +178,7 @@ export default function Home() {
         {!loading && allItems.length > 0 && (
           <div className="mt-4 bg-white/15 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div>
-              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider">🥬 冷蔵庫スコア</p>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider">{t.homeFridgeScore}</p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-white text-2xl font-black">{fridgeScore}点</span>
                 <span className={`text-sm font-bold ${scoreMeta.color}`}>{scoreMeta.label}</span>
@@ -186,7 +186,7 @@ export default function Home() {
             </div>
             {savingsCount > 0 && (
               <p className="text-white/70 text-xs text-right leading-snug">
-                今日は{savingsCount}つの食材を<br />ムダにせず使えそう
+                {t.homeSavingsDesc(savingsCount)}
               </p>
             )}
           </div>
@@ -203,22 +203,22 @@ export default function Home() {
                        border-2 border-red-100 text-left active:scale-98 transition-all"
           >
             <div className="flex items-center gap-3">
-              <span className="text-3xl shrink-0 animate-pulse-soft">🥺</span>
+              <span className="text-3xl shrink-0 animate-puru-puru inline-block">🥺</span>
               <div className="flex-1 min-w-0">
                 <p className="font-black text-red-500 text-base truncate">
-                  {urgentItems.map((i) => i.name).slice(0, 3).join("・")}
-                  　たすけて〜！
+                  {urgentItems.map((i) => i.name).slice(0, 3).join(t.nameSep)}
+                  　{t.homeUrgentLabel}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">タップで今すぐレシピを考えてもらう →</p>
+                <p className="text-xs text-gray-400 mt-0.5">{t.homeUrgentTap}</p>
               </div>
             </div>
           </button>
         )}
         {warningItems.length > 0 && urgentItems.length === 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 animate-slide-up flex items-center gap-3">
-            <span className="text-2xl shrink-0">🥕</span>
+            <span className="text-2xl shrink-0 animate-yura-yura inline-block">🥕</span>
             <p className="text-amber-700 font-semibold text-sm">
-              {warningItems.map((i) => i.name).slice(0, 3).join("・")} がそろそろ使い時です
+              {t.homeWarning(warningItems.map((i) => i.name).slice(0, 3).join(t.nameSep))}
             </p>
           </div>
         )}

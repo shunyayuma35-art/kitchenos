@@ -10,7 +10,7 @@ const STAPLES_BY_GROUP = [
   { group: "野菜・果物", emoji: "🥬", items: [
     "キャベツ", "にんじん", "たまねぎ", "ほうれん草", "小松菜", "ブロッコリー",
     "トマト", "きゅうり", "なす", "ピーマン", "アスパラガス", "レタス",
-    "もやし", "長ねぎ", "にんにく", "しょうが", "りんご", "バナナ", "みかん",
+    "もやし", "長ねぎ", "にんにく", "しょうが", "たけのこ", "りんご", "バナナ", "みかん",
   ]},
   { group: "きのこ", emoji: "🍄", items: [
     "しめじ", "えのき", "エリンギ", "しいたけ", "まいたけ",
@@ -266,20 +266,27 @@ export default function ShoppingPage() {
                   >
                     すべて
                   </button>
-                  {extraByGroup.map((g) => (
-                    <button
-                      key={g.group}
-                      onClick={() => setActiveGroup(activeGroup === g.group ? null : g.group)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                        activeGroup === g.group
-                          ? "bg-gray-800 text-white border-gray-800"
-                          : "bg-white text-gray-500 border-gray-200"
-                      }`}
-                    >
-                      <span>{g.emoji}</span>
-                      <span>{g.group}</span>
-                    </button>
-                  ))}
+                  {extraByGroup.map((g, idx) => {
+                    const anims = ["animate-fuwa-fuwa", "animate-yura-yura", "animate-puru-puru"];
+                    const animClass = anims[idx % 3];
+                    return (
+                      <button
+                        key={g.group}
+                        onClick={() => setActiveGroup(activeGroup === g.group ? null : g.group)}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                          activeGroup === g.group
+                            ? "bg-gray-800 text-white border-gray-800"
+                            : "bg-white text-gray-500 border-gray-200"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block ${animClass}`}
+                          style={{ animationDelay: `${idx * 0.25}s` }}
+                        >{g.emoji}</span>
+                        <span>{g.group}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* アイテムカード — カテゴリ選択時のみ表示 */}
