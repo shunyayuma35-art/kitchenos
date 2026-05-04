@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, ChangeEvent, useMemo } from "react";
+import { useState, useRef, useCallback, ChangeEvent, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { addItem, visionIdentify, visionSave } from "@/lib/api";
 import type { Category, IdentifiedItem } from "@/lib/api";
@@ -106,6 +106,64 @@ export default function AddPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<Mode>("list");
 
+  // 音声検索
+  const [isListening, setIsListening]   = useState(false);
+  const [voiceError, setVoiceError]     = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+
+  const startVoice = useCallback(() => {
+    setVoiceError(null);
+    const host = location.hostname;
+    const isSecure = location.protocol === "https:" || host === "localhost" || host === "127.0.0.1";
+    if (!isSecure) {
+      setVoiceError("音声入力はHTTPS環境（本番URL）でのみ動作します。");
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceError("このブラウザは音声入力非対応です（Chrome/Safariをお試しください）");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec = new SR() as any;
+    rec.lang = "ja-JP";
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
+      let text = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        text += e.results[i][0].transcript as string;
+      }
+      setQuery(text);
+      if (e.results[e.resultIndex]?.isFinal) {
+        setIsListening(false);
+      }
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onerror = (e: any) => {
+      const msgs: Record<string, string> = {
+        "not-allowed": "マイクを許可してください。",
+        "no-speech":   "声が検出されませんでした。",
+        "network":     "音声入力はHTTPS本番環境でのみ動作します。",
+        "aborted":     "",
+      };
+      const msg = msgs[e.error as string] ?? `音声エラー: ${e.error}`;
+      if (msg) setVoiceError(msg);
+      setIsListening(false);
+    };
+    rec.onend = () => setIsListening(false);
+    recognitionRef.current = rec;
+    try { rec.start(); setIsListening(true); }
+    catch { setVoiceError("音声入力を開始できませんでした。"); }
+  }, []);
+
+  const stopVoice = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
   const CATEGORY_OPTIONS: { value: Category; label: string; icon: string }[] = [
     { value: "fridge",    label: t.catFridge,    icon: "❄️" },
     { value: "freezer",   label: t.catFreezer,   icon: "🧊" },
@@ -205,14 +263,40 @@ export default function AddPage() {
         {/* ── リストから選ぶ ── */}
         {mode === "list" && (
           <div className="animate-fade-in space-y-2.5">
-            {/* 検索バー */}
+            {/* 検索バー + 音声ボタン */}
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-              <input type="text" placeholder={t.addSearch} value={query}
+              <input
+                type="text"
+                placeholder={isListening ? "話しかけてください…" : t.addSearch}
+                value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full border border-gray-200 rounded-2xl pl-9 pr-4 py-2.5 text-sm bg-white
-                           focus:outline-none focus:ring-2 focus:ring-amber-300 card-shadow" />
+                className={`w-full border rounded-2xl pl-9 pr-12 py-2.5 text-sm focus:outline-none focus:ring-2 card-shadow transition-colors ${
+                  isListening
+                    ? "border-red-300 bg-red-50 focus:ring-red-200 text-red-700"
+                    : "border-gray-200 bg-white focus:ring-amber-300"
+                }`}
+              />
+              <button
+                onClick={isListening ? stopVoice : startVoice}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                  isListening
+                    ? "bg-red-500 text-white animate-pulse shadow-md shadow-red-200"
+                    : "text-gray-400 active:text-amber-600"
+                }`}
+              >
+                <span className="text-base leading-none">{isListening ? "⏹" : "🎙️"}</span>
+              </button>
             </div>
+
+            {/* 音声エラー表示 */}
+            {voiceError && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-100 rounded-xl">
+                <span className="text-sm shrink-0">⚠️</span>
+                <p className="text-xs text-amber-700 flex-1">{voiceError}</p>
+                <button onClick={() => setVoiceError(null)} className="text-amber-400 text-sm shrink-0">×</button>
+              </div>
+            )}
 
             {/* カテゴリフィルター — 折り返し2行 */}
             <div className="flex flex-wrap gap-1.5">
