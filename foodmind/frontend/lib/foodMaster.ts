@@ -100,10 +100,33 @@ export const FOOD_MASTER: MasterItem[] = [
   { name: "やまのいも",   group: "野菜", groupEmoji: "🥬", category: "vegetable", defaultExpiryDays: 14 },
   { name: "ヤーコン",     group: "野菜", groupEmoji: "🥬", category: "vegetable", defaultExpiryDays: 14 },
   { name: "食用菊",       group: "野菜", groupEmoji: "🌸", category: "vegetable", defaultExpiryDays: 3  },
-  // ── 芋類 ─────────────────────────────────────
+  // ── 芋類（じゃがいも） ───────────────────────
   { name: "じゃがいも",   group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 30 },
+  { name: "メークイン",   group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 30 },
+  { name: "男爵いも",     group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 30 },
+  { name: "きたあかり",   group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 30 },
+  { name: "新じゃが",     group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  // ── 芋類（さつまいも） ───────────────────────
   { name: "さつまいも",   group: "芋類", groupEmoji: "🍠", category: "vegetable", defaultExpiryDays: 30 },
+  { name: "安納芋",       group: "芋類", groupEmoji: "🍠", category: "vegetable", defaultExpiryDays: 21 },
+  { name: "紅はるか",     group: "芋類", groupEmoji: "🍠", category: "vegetable", defaultExpiryDays: 21 },
+  { name: "鳴門金時",     group: "芋類", groupEmoji: "🍠", category: "vegetable", defaultExpiryDays: 21 },
+  { name: "紫芋",         group: "芋類", groupEmoji: "🍠", category: "vegetable", defaultExpiryDays: 21 },
+  // ── 芋類（さといも） ─────────────────────────
   { name: "さといも",     group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  { name: "八頭",         group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  { name: "えびいも",     group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 10 },
+  // ── 芋類（長芋・山芋） ───────────────────────
+  { name: "長芋",         group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  { name: "大和芋",       group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  { name: "自然薯",       group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  { name: "つくね芋",     group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  // ── 芋類（こんにゃく） ───────────────────────
+  { name: "こんにゃく",   group: "芋類", groupEmoji: "🥔", category: "fridge",    defaultExpiryDays: 14 },
+  { name: "しらたき",     group: "芋類", groupEmoji: "🥔", category: "fridge",    defaultExpiryDays: 14 },
+  { name: "板こんにゃく", group: "芋類", groupEmoji: "🥔", category: "fridge",    defaultExpiryDays: 14 },
+  { name: "くわい",       group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 14 },
+  { name: "きくいも",     group: "芋類", groupEmoji: "🥔", category: "vegetable", defaultExpiryDays: 10 },
   // ── きのこ類 ──────────────────────────────────
   { name: "しいたけ",     group: "きのこ", groupEmoji: "🍄", category: "vegetable", defaultExpiryDays: 5  },
   { name: "しめじ",       group: "きのこ", groupEmoji: "🍄", category: "vegetable", defaultExpiryDays: 5  },
