@@ -240,7 +240,55 @@ export default function Home() {
             </div>
           ) : priorityItems.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center card-shadow">
-              <p className="text-5xl mb-3">🥕</p>
+              {/* ぷるんぷるん ブロッコリーキャラクター */}
+              <div className="flex justify-center mb-3">
+                <svg
+                  viewBox="0 0 100 115"
+                  className="w-24 h-28 animate-veggie-bounce"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* 茎 */}
+                  <rect x="43" y="86" width="14" height="22" rx="6" fill="#4A7C28" />
+                  {/* 影 */}
+                  <ellipse cx="50" cy="110" rx="18" ry="4" fill="#000" opacity="0.07" />
+
+                  {/* ボディ（ブロッコリーの房） */}
+                  <circle cx="50" cy="64" r="28" fill="#5CB83A" />
+                  <circle cx="28" cy="56" r="20" fill="#63C43F" />
+                  <circle cx="72" cy="56" r="20" fill="#63C43F" />
+                  <circle cx="50" cy="42" r="22" fill="#63C43F" />
+                  <circle cx="32" cy="44" r="16" fill="#75D150" />
+                  <circle cx="68" cy="44" r="16" fill="#75D150" />
+                  <circle cx="50" cy="30" r="19" fill="#75D150" />
+                  <circle cx="38" cy="34" r="12" fill="#85DC60" />
+                  <circle cx="62" cy="34" r="12" fill="#85DC60" />
+                  <circle cx="50" cy="20" r="13" fill="#85DC60" />
+
+                  {/* 顔エリア */}
+                  <ellipse cx="50" cy="72" rx="20" ry="16" fill="#5CB83A" />
+
+                  {/* 目（白目） */}
+                  <circle cx="41" cy="68" r="6" fill="white" />
+                  <circle cx="59" cy="68" r="6" fill="white" />
+                  {/* 瞳 */}
+                  <circle cx="42" cy="69" r="3.2" fill="#1A1A1A" />
+                  <circle cx="60" cy="69" r="3.2" fill="#1A1A1A" />
+                  {/* キラキラ */}
+                  <circle cx="43.5" cy="67.5" r="1.3" fill="white" />
+                  <circle cx="61.5" cy="67.5" r="1.3" fill="white" />
+                  <circle cx="44.5" cy="70" r="0.6" fill="white" />
+                  <circle cx="62.5" cy="70" r="0.6" fill="white" />
+
+                  {/* ほっぺ */}
+                  <ellipse cx="31" cy="74" rx="8" ry="5" fill="#FF8FAB" opacity="0.55" />
+                  <ellipse cx="69" cy="74" rx="8" ry="5" fill="#FF8FAB" opacity="0.55" />
+
+                  {/* 口（笑顔） */}
+                  <path d="M 40 77 Q 50 86 60 77" stroke="#1A1A1A" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  {/* 舌 */}
+                  <ellipse cx="50" cy="82" rx="5" ry="3.5" fill="#FF6B8A" opacity="0.8" />
+                </svg>
+              </div>
               <p className="text-gray-500 text-base font-semibold">{t.homeEmptyTitle}</p>
               <p className="text-gray-400 text-sm mt-1">{t.homeEmptyHint}</p>
             </div>

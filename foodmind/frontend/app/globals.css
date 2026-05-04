@@ -43,3 +43,28 @@
 .animate-slide-up  { animation: slideUp  0.35s ease both; }
 .animate-fade-in   { animation: fadeIn   0.25s ease both; }
 .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
+/* ── ぷるんぷるん野菜キャラクター ── */
+@keyframes veggie-bounce {
+  0%   { transform: translateY(0)     scaleX(1)    scaleY(1)    rotate(0deg); }
+  8%   { transform: translateY(3px)   scaleX(1.14) scaleY(0.86) rotate(0deg); }
+  25%  { transform: translateY(-32px) scaleX(0.87) scaleY(1.14) rotate(-7deg); }
+  40%  { transform: translateY(-14px) scaleX(0.92) scaleY(1.08) rotate(5deg); }
+  50%  { transform: translateY(0)     scaleX(1.16) scaleY(0.84) rotate(0deg); }
+  60%  { transform: translateY(-12px) scaleX(0.94) scaleY(1.06) rotate(-4deg); }
+  68%  { transform: translateY(0)     scaleX(1.08) scaleY(0.92) rotate(0deg); }
+  76%  { transform: translateY(-5px)  scaleX(0.98) scaleY(1.02) rotate(2deg); }
+  84%  { transform: translateY(0)     scaleX(1.03) scaleY(0.97) rotate(0deg); }
+  92%  { transform: translateY(-2px)  scaleX(1)    scaleY(1)    rotate(-1deg); }
+  100% { transform: translateY(0)     scaleX(1)    scaleY(1)    rotate(0deg); }
+}
+
+@keyframes veggie-eye-blink {
+  0%, 90%, 100% { scaleY: 1; }
+  95%           { transform: scaleY(0.05); }
+}
+
+.animate-veggie-bounce {
+  animation: veggie-bounce 2.2s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  transform-origin: 50% 100%;
+}
