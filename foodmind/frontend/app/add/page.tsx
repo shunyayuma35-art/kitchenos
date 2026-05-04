@@ -204,37 +204,47 @@ export default function AddPage() {
 
         {/* ── リストから選ぶ ── */}
         {mode === "list" && (
-          <div className="animate-fade-in space-y-3">
+          <div className="animate-fade-in space-y-2.5">
+            {/* 検索バー */}
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
               <input type="text" placeholder={t.addSearch} value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full border border-gray-200 rounded-2xl pl-9 pr-4 py-3 text-sm bg-white
+                className="w-full border border-gray-200 rounded-2xl pl-9 pr-4 py-2.5 text-sm bg-white
                            focus:outline-none focus:ring-2 focus:ring-amber-300 card-shadow" />
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* カテゴリフィルター — 折り返し2行 */}
+            <div className="flex flex-wrap gap-1.5">
               {GROUPS.map((g) => (
                 <button key={g.name} onClick={() => setGroup(g.name)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    activeGroup === g.name ? "bg-amber-600 text-white" : "bg-white text-gray-500 border border-gray-200"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all ${
+                    activeGroup === g.name
+                      ? "bg-amber-600 text-white shadow-sm"
+                      : "bg-white text-gray-500 border border-gray-200"
                   }`}>
                   {g.emoji} {t.grpLabels[g.name] ?? g.name}
                 </button>
               ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            {/* 食材グリッド — 4列コンパクト */}
+            <div className="grid grid-cols-4 gap-1.5">
               {filtered.map((item) => {
                 const isSelected = !!selected.find((s) => s.name === item.name);
                 return (
                   <button key={item.name} onClick={() => toggleItem(item)}
-                    className={`rounded-2xl p-3 text-center text-xs font-medium transition-all border ${
-                      isSelected ? "bg-amber-500 text-white border-amber-500 shadow-md" : "bg-white text-gray-700 border-gray-100 card-shadow"
+                    className={`relative rounded-xl py-2.5 px-1 text-center transition-all border active:scale-95 ${
+                      isSelected
+                        ? "bg-amber-500 text-white border-amber-400 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-100 card-shadow"
                     }`}>
-                    <span className="block text-xl mb-0.5">{item.groupEmoji}</span>
-                    <span className="leading-tight line-clamp-2">{item.name}</span>
-                    {isSelected && <span className="block text-[10px] mt-0.5 opacity-80">{t.addSelectedBadge}</span>}
+                    {isSelected && (
+                      <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full
+                                       text-amber-600 text-[9px] font-black flex items-center justify-center">✓</span>
+                    )}
+                    <span className="block text-lg leading-none mb-0.5">{item.groupEmoji}</span>
+                    <span className="text-[10px] leading-tight line-clamp-2 block">{item.name}</span>
                   </button>
                 );
               })}
