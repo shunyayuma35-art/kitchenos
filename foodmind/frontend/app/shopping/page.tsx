@@ -183,6 +183,81 @@ export default function ShoppingPage() {
           ))
         ) : (
           <>
+            {/* ── ついで買い（ジャンル別）── */}
+            {extraByGroup.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.shopExtra}</span>
+                  <span className="text-xs text-gray-400">{totalExtra}</span>
+                </div>
+
+                {/* カテゴリチップ — flex-wrap で全件一覧表示 */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <button
+                    onClick={() => setActiveGroup(null)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                      activeGroup === null
+                        ? "bg-gray-800 text-white border-gray-800"
+                        : "bg-white text-gray-500 border-gray-200"
+                    }`}
+                  >
+                    すべて
+                  </button>
+                  {extraByGroup.map((g) => (
+                    <button
+                      key={g.group}
+                      onClick={() => setActiveGroup(activeGroup === g.group ? null : g.group)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                        activeGroup === g.group
+                          ? "bg-gray-800 text-white border-gray-800"
+                          : "bg-white text-gray-500 border-gray-200"
+                      }`}
+                    >
+                      <span>{g.emoji}</span>
+                      <span>{g.group}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* アイテムカード — カテゴリ選択時のみ表示 */}
+                {activeGroup && (
+                  <div className="space-y-3">
+                    {filteredGroups.map((g) => (
+                      <div key={g.group} className="bg-white rounded-2xl p-3 card-shadow">
+                        <div className="flex items-center gap-2 mb-2.5">
+                          <span className="text-xl leading-none">{g.emoji}</span>
+                          <span className="text-sm font-bold text-gray-700">{g.group}</span>
+                          <span className="text-[11px] text-gray-400 ml-auto bg-gray-100 px-2 py-0.5 rounded-full">
+                            {g.missing.length}品
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {g.missing.map((name) => {
+                            const done = checked.has(name);
+                            return (
+                              <button
+                                key={name}
+                                onClick={() => toggle(name)}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                                  done
+                                    ? "bg-gray-100 border-gray-200 text-gray-400 line-through opacity-50"
+                                    : "bg-orange-50 border-orange-100 text-gray-700 active:scale-95 active:bg-orange-100"
+                                }`}
+                              >
+                                {done && <span className="text-orange-400 text-[10px]">✓</span>}
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* ── 買い物メモ ── */}
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -193,7 +268,6 @@ export default function ShoppingPage() {
                 )}
               </div>
 
-              {/* 入力エリア */}
               <div className="bg-white rounded-2xl p-3 card-shadow space-y-2">
                 <div className="flex gap-2">
                   <input
@@ -229,7 +303,6 @@ export default function ShoppingPage() {
                   </div>
                 )}
 
-                {/* メモリスト */}
                 {memos.length > 0 ? (
                   <div className="space-y-1 pt-1">
                     {memos.map((memo) => (
@@ -266,82 +339,6 @@ export default function ShoppingPage() {
                 )}
               </div>
             </section>
-
-            {/* ── ついで買い（ジャンル別）── */}
-            {extraByGroup.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.shopExtra}</span>
-                  <span className="text-xs text-gray-400">{totalExtra}</span>
-                </div>
-
-                {/* カテゴリフィルターチップ */}
-                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-                  <button
-                    onClick={() => setActiveGroup(null)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                      activeGroup === null
-                        ? "bg-gray-800 text-white border-gray-800"
-                        : "bg-white text-gray-500 border-gray-200"
-                    }`}
-                  >
-                    すべて
-                  </button>
-                  {extraByGroup.map((g) => (
-                    <button
-                      key={g.group}
-                      onClick={() => setActiveGroup(activeGroup === g.group ? null : g.group)}
-                      className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                        activeGroup === g.group
-                          ? "bg-gray-800 text-white border-gray-800"
-                          : "bg-white text-gray-500 border-gray-200"
-                      }`}
-                    >
-                      <span>{g.emoji}</span>
-                      <span>{g.group}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* グループカード */}
-                <div className="space-y-3">
-                  {filteredGroups.map((g) => (
-                    <div key={g.group} className="bg-white rounded-2xl p-3 card-shadow">
-                      {/* カテゴリヘッダー */}
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <span className="text-xl leading-none">{g.emoji}</span>
-                        <span className="text-sm font-bold text-gray-700">{g.group}</span>
-                        <span className="text-[11px] text-gray-400 ml-auto bg-gray-100 px-2 py-0.5 rounded-full">
-                          {g.missing.length}品
-                        </span>
-                      </div>
-
-                      {/* アイテムチップ */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {g.missing.map((name) => {
-                          const done = checked.has(name);
-                          return (
-                            <button
-                              key={name}
-                              onClick={() => toggle(name)}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                                done
-                                  ? "bg-gray-100 border-gray-200 text-gray-400 line-through opacity-50"
-                                  : "bg-orange-50 border-orange-100 text-gray-700 active:scale-95 active:bg-orange-100"
-                              }`}
-                            >
-                              {done && <span className="text-orange-400 text-[10px]">✓</span>}
-                              {name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
 
             {extraByGroup.length === 0 && memos.length === 0 && (
               <div className="bg-white rounded-2xl p-12 text-center card-shadow mt-4">
