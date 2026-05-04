@@ -268,7 +268,8 @@ export default function ShoppingPage() {
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl p-3 card-shadow space-y-2">
+              {/* 入力エリア（コンパクト） */}
+              <div className="bg-white rounded-2xl p-3 card-shadow">
                 <div className="flex gap-2">
                   <input
                     value={memoInput}
@@ -295,49 +296,53 @@ export default function ShoppingPage() {
                     +
                   </button>
                 </div>
-
                 {isListening && (
-                  <div className="flex items-center gap-2 px-1">
+                  <div className="flex items-center gap-2 px-1 mt-2">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-xs text-red-500 font-medium">聞いています… 話しかけてください</span>
                   </div>
                 )}
-
-                {memos.length > 0 ? (
-                  <div className="space-y-1 pt-1">
-                    {memos.map((memo) => (
-                      <div
-                        key={memo.id}
-                        className={`flex items-center gap-2 px-2 py-2 rounded-xl transition-all ${
-                          memo.done ? "opacity-40" : "bg-gray-50"
-                        }`}
-                      >
-                        <button
-                          onClick={() => toggleMemo(memo.id)}
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                            memo.done ? "bg-gray-400 border-gray-400" : "border-gray-300 active:scale-90"
-                          }`}
-                        >
-                          {memo.done && <span className="text-white text-[9px] font-bold">✓</span>}
-                        </button>
-                        <span className={`flex-1 text-sm ${memo.done ? "line-through text-gray-400" : "text-gray-800"}`}>
-                          {memo.text}
-                        </span>
-                        <button
-                          onClick={() => deleteMemo(memo.id)}
-                          className="text-gray-300 active:text-red-400 text-lg leading-none px-1 transition-colors"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-3 text-center border-t border-gray-100">
-                    <p className="text-gray-400 text-xs">🎙️ マイクボタンで話すか、入力してメモ追加</p>
-                  </div>
+                {memos.length === 0 && !isListening && (
+                  <p className="text-center text-gray-400 text-xs mt-2">🎙️ マイクボタンで話すか、入力してメモ追加</p>
                 )}
               </div>
+
+              {/* メモリスト — 入力カードの下に独立表示 */}
+              {memos.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {memos.map((memo) => (
+                    <div
+                      key={memo.id}
+                      className={`flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border transition-all card-shadow ${
+                        memo.done ? "border-gray-100 opacity-50" : "border-gray-100"
+                      }`}
+                    >
+                      {/* チェックボタン */}
+                      <button
+                        onClick={() => toggleMemo(memo.id)}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all active:scale-90 ${
+                          memo.done ? "bg-blue-400 border-blue-400" : "border-gray-300"
+                        }`}
+                      >
+                        {memo.done && <span className="text-white text-[9px] font-bold">✓</span>}
+                      </button>
+
+                      {/* テキスト */}
+                      <span className={`flex-1 text-sm font-medium ${memo.done ? "line-through text-gray-400" : "text-gray-800"}`}>
+                        {memo.text}
+                      </span>
+
+                      {/* 削除ボタン — 常時表示 */}
+                      <button
+                        onClick={() => deleteMemo(memo.id)}
+                        className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0 text-gray-400 active:bg-red-100 active:text-red-500 transition-all text-sm font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {extraByGroup.length === 0 && memos.length === 0 && (
