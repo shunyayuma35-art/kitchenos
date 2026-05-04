@@ -90,6 +90,8 @@ export default function ShoppingPage() {
   const [cart, setCart] = useState<CartItem[]>(loadCart);
   const [memoInput, setMemoInput] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [interimText, setInterimText] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
@@ -149,30 +151,79 @@ export default function ShoppingPage() {
   }
 
   function startVoice() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      alert("音声入力はこのブラウザでは利用できません（Chrome/Safariをお試しください）");
+    setVoiceError(null);
+    setInterimText("");
+
+    // HTTPSチェック（localhost / 127.0.0.1 は除外）
+    const host = location.hostname;
+    const isSecure = location.protocol === "https:" || host === "localhost" || host === "127.0.0.1";
+    if (!isSecure) {
+      setVoiceError("音声入力はHTTPS環境が必要です。Vercelの本番URLでお試しください。");
       return;
     }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceError("このブラウザは音声入力非対応です（Chrome / Safari をお試しください）");
+      return;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec = new SR() as any;
     rec.lang = "ja-JP";
-    rec.interimResults = false;
+    rec.interimResults = true;
     rec.maxAlternatives = 1;
+    rec.continuous = false;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
-      addToCart(e.results[0][0].transcript as string);
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript as string;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      setInterimText(interim);
+      if (final) {
+        addToCart(final);
+        setInterimText("");
+        setIsListening(false);
+      }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onerror = (e: any) => {
+      const msgs: Record<string, string> = {
+        "not-allowed": "マイクが許可されていません。ブラウザのアドレスバー横の🔒からマイクを許可してください。",
+        "no-speech": "声が検出されませんでした。もう少し大きな声でお試しください。",
+        "network": "ネットワークエラーです。インターネット接続を確認してください。",
+        "audio-capture": "マイクが見つかりません。端末のマイクを確認してください。",
+        "aborted": "",
+      };
+      const msg = msgs[e.error as string] ?? `音声エラー: ${e.error}`;
+      if (msg) setVoiceError(msg);
+      setInterimText("");
       setIsListening(false);
     };
-    rec.onerror = () => setIsListening(false);
-    rec.onend = () => setIsListening(false);
+
+    rec.onend = () => {
+      setInterimText("");
+      setIsListening(false);
+    };
+
     recognitionRef.current = rec;
-    rec.start();
-    setIsListening(true);
+    try {
+      rec.start();
+      setIsListening(true);
+    } catch {
+      setVoiceError("音声入力を開始できませんでした。");
+    }
   }
 
   function stopVoice() {
     recognitionRef.current?.stop();
+    setInterimText("");
     setIsListening(false);
   }
 
@@ -283,11 +334,16 @@ export default function ShoppingPage() {
               <div className="bg-white rounded-2xl p-3 card-shadow">
                 <div className="flex gap-2">
                   <input
-                    value={memoInput}
-                    onChange={(e) => setMemoInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addToCart(memoInput); }}
-                    placeholder="メモを入力… (例: しょうゆ 濃口)"
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-orange-300 focus:bg-white transition-colors"
+                    value={interimText || memoInput}
+                    onChange={(e) => { if (!isListening) setMemoInput(e.target.value); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !isListening) addToCart(memoInput); }}
+                    placeholder={isListening ? "話しかけてください…" : "メモを入力… (例: しょうゆ 濃口)"}
+                    readOnly={isListening}
+                    className={`flex-1 border rounded-xl px-3 py-2.5 text-sm outline-none transition-colors ${
+                      isListening
+                        ? "bg-red-50 border-red-200 text-red-700 italic"
+                        : "bg-gray-50 border-gray-200 text-gray-800 focus:border-orange-300 focus:bg-white"
+                    }`}
                   />
                   <button
                     onClick={isListening ? stopVoice : startVoice}
@@ -301,19 +357,33 @@ export default function ShoppingPage() {
                   </button>
                   <button
                     onClick={() => addToCart(memoInput)}
-                    disabled={!memoInput.trim()}
+                    disabled={!memoInput.trim() || isListening}
                     className="w-11 h-11 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 disabled:opacity-30 active:scale-95 transition-all text-xl font-bold shadow-sm"
                   >
                     +
                   </button>
                 </div>
+
+                {/* 録音中インジケーター */}
                 {isListening && (
                   <div className="flex items-center gap-2 px-1 mt-2">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-xs text-red-500 font-medium">聞いています… 話しかけてください</span>
+                    <span className="text-xs text-red-500 font-medium">
+                      {interimText ? `「${interimText}」` : "聞いています… 話しかけてください"}
+                    </span>
                   </div>
                 )}
-                {cart.length === 0 && !isListening && (
+
+                {/* エラー表示 */}
+                {voiceError && (
+                  <div className="flex items-start gap-2 mt-2 px-2 py-2 bg-amber-50 rounded-xl">
+                    <span className="text-amber-500 text-sm shrink-0">⚠️</span>
+                    <p className="text-xs text-amber-700 leading-relaxed">{voiceError}</p>
+                    <button onClick={() => setVoiceError(null)} className="text-amber-400 text-sm ml-auto shrink-0">×</button>
+                  </div>
+                )}
+
+                {cart.length === 0 && !isListening && !voiceError && (
                   <p className="text-center text-gray-400 text-xs mt-2">
                     🎙️ マイクまたは入力、上のカテゴリ選択でリスト追加
                   </p>
