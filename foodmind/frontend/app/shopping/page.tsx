@@ -59,7 +59,7 @@ const STAPLES_BY_GROUP = [
   ]},
 ];
 
-interface MemoItem {
+interface CartItem {
   id: string;
   text: string;
   done: boolean;
@@ -74,28 +74,28 @@ declare global {
   }
 }
 
-function loadMemos(): MemoItem[] {
+function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem("shop_memos") || "[]"); }
+  try { return JSON.parse(localStorage.getItem("shop_cart") || "[]"); }
   catch { return []; }
 }
 
 export default function ShoppingPage() {
   const t = useT();
   const [items, setItems] = useState<FoodItem[]>([]);
-  const [checked, setChecked] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
 
-  const [memos, setMemos] = useState<MemoItem[]>(loadMemos);
+  // 統合カート：チップ選択もテキスト入力も全部ここに入る
+  const [cart, setCart] = useState<CartItem[]>(loadCart);
   const [memoInput, setMemoInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    localStorage.setItem("shop_memos", JSON.stringify(memos));
-  }, [memos]);
+    localStorage.setItem("shop_cart", JSON.stringify(cart));
+  }, [cart]);
 
   const load = useCallback(async () => {
     try { setItems(await fetchItems()); }
@@ -114,27 +114,38 @@ export default function ShoppingPage() {
   const totalExtra = extraByGroup.reduce((sum, g) => sum + g.missing.length, 0);
   const filteredGroups = activeGroup ? extraByGroup.filter((g) => g.group === activeGroup) : extraByGroup;
 
-  function toggle(name: string) {
-    setChecked((prev) => {
-      const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
-      return next;
-    });
+  // カートにあるか確認
+  const inCart = (text: string) => cart.some((c) => c.text === text);
+
+  // チップタップ → カートに追加/削除（トグル）
+  function toggleStaple(name: string) {
+    const existing = cart.find((c) => c.text === name);
+    if (existing) {
+      setCart((prev) => prev.filter((c) => c.id !== existing.id));
+    } else {
+      setCart((prev) => [...prev, { id: `${Date.now()}-${name}`, text: name, done: false }]);
+    }
   }
 
-  function addMemo(text: string) {
+  // テキスト/音声入力 → カートに追加
+  function addToCart(text: string) {
     const trimmed = text.trim();
     if (!trimmed) return;
-    setMemos((prev) => [...prev, { id: Date.now().toString(), text: trimmed, done: false }]);
+    if (inCart(trimmed)) return; // 重複防止
+    setCart((prev) => [...prev, { id: `${Date.now()}-memo`, text: trimmed, done: false }]);
     setMemoInput("");
   }
 
-  function toggleMemo(id: string) {
-    setMemos((prev) => prev.map((m) => m.id === id ? { ...m, done: !m.done } : m));
+  function toggleDone(id: string) {
+    setCart((prev) => prev.map((c) => c.id === id ? { ...c, done: !c.done } : c));
   }
 
-  function deleteMemo(id: string) {
-    setMemos((prev) => prev.filter((m) => m.id !== id));
+  function removeFromCart(id: string) {
+    setCart((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function clearDone() {
+    setCart((prev) => prev.filter((c) => !c.done));
   }
 
   function startVoice() {
@@ -150,8 +161,7 @@ export default function ShoppingPage() {
     rec.maxAlternatives = 1;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
-      const text = e.results[0][0].transcript as string;
-      addMemo(text);
+      addToCart(e.results[0][0].transcript as string);
       setIsListening(false);
     };
     rec.onerror = () => setIsListening(false);
@@ -166,7 +176,8 @@ export default function ShoppingPage() {
     setIsListening(false);
   }
 
-  const pendingMemos = memos.filter((m) => !m.done).length;
+  const pendingCount = cart.filter((c) => !c.done).length;
+  const doneCount = cart.filter((c) => c.done).length;
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gray-50 pb-32">
@@ -192,7 +203,7 @@ export default function ShoppingPage() {
                   <span className="text-xs text-gray-400">{totalExtra}</span>
                 </div>
 
-                {/* カテゴリチップ — flex-wrap で全件一覧表示 */}
+                {/* カテゴリチップ — flex-wrap 全件表示 */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   <button
                     onClick={() => setActiveGroup(null)}
@@ -234,18 +245,18 @@ export default function ShoppingPage() {
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {g.missing.map((name) => {
-                            const done = checked.has(name);
+                            const selected = inCart(name);
                             return (
                               <button
                                 key={name}
-                                onClick={() => toggle(name)}
-                                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                                  done
-                                    ? "bg-gray-100 border-gray-200 text-gray-400 line-through opacity-50"
-                                    : "bg-orange-50 border-orange-100 text-gray-700 active:scale-95 active:bg-orange-100"
+                                onClick={() => toggleStaple(name)}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all border active:scale-95 ${
+                                  selected
+                                    ? "bg-orange-500 border-orange-500 text-white"
+                                    : "bg-orange-50 border-orange-100 text-gray-700"
                                 }`}
                               >
-                                {done && <span className="text-orange-400 text-[10px]">✓</span>}
+                                {selected && <span className="text-[10px]">✓</span>}
                                 {name}
                               </button>
                             );
@@ -263,18 +274,18 @@ export default function ShoppingPage() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">買い物メモ</span>
-                {pendingMemos > 0 && (
-                  <span className="text-xs bg-blue-100 text-blue-600 font-bold px-2 py-0.5 rounded-full">{pendingMemos}</span>
+                {pendingCount > 0 && (
+                  <span className="text-xs bg-blue-100 text-blue-600 font-bold px-2 py-0.5 rounded-full">{pendingCount}</span>
                 )}
               </div>
 
-              {/* 入力エリア（コンパクト） */}
+              {/* 入力エリア */}
               <div className="bg-white rounded-2xl p-3 card-shadow">
                 <div className="flex gap-2">
                   <input
                     value={memoInput}
                     onChange={(e) => setMemoInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addMemo(memoInput); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") addToCart(memoInput); }}
                     placeholder="メモを入力… (例: しょうゆ 濃口)"
                     className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-orange-300 focus:bg-white transition-colors"
                   />
@@ -289,7 +300,7 @@ export default function ShoppingPage() {
                     <span className="text-lg leading-none">{isListening ? "⏹" : "🎙️"}</span>
                   </button>
                   <button
-                    onClick={() => addMemo(memoInput)}
+                    onClick={() => addToCart(memoInput)}
                     disabled={!memoInput.trim()}
                     className="w-11 h-11 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 disabled:opacity-30 active:scale-95 transition-all text-xl font-bold shadow-sm"
                   >
@@ -302,39 +313,41 @@ export default function ShoppingPage() {
                     <span className="text-xs text-red-500 font-medium">聞いています… 話しかけてください</span>
                   </div>
                 )}
-                {memos.length === 0 && !isListening && (
-                  <p className="text-center text-gray-400 text-xs mt-2">🎙️ マイクボタンで話すか、入力してメモ追加</p>
+                {cart.length === 0 && !isListening && (
+                  <p className="text-center text-gray-400 text-xs mt-2">
+                    🎙️ マイクまたは入力、上のカテゴリ選択でリスト追加
+                  </p>
                 )}
               </div>
 
-              {/* メモリスト — 入力カードの下に独立表示 */}
-              {memos.length > 0 && (
+              {/* 統合カートリスト — チップ選択 + テキスト入力 両方を表示 */}
+              {cart.length > 0 && (
                 <div className="mt-2 space-y-2">
-                  {memos.map((memo) => (
+                  {cart.map((item) => (
                     <div
-                      key={memo.id}
-                      className={`flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border transition-all card-shadow ${
-                        memo.done ? "border-gray-100 opacity-50" : "border-gray-100"
+                      key={item.id}
+                      className={`flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border card-shadow transition-all ${
+                        item.done ? "border-gray-100 opacity-50" : "border-gray-100"
                       }`}
                     >
                       {/* チェックボタン */}
                       <button
-                        onClick={() => toggleMemo(memo.id)}
+                        onClick={() => toggleDone(item.id)}
                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all active:scale-90 ${
-                          memo.done ? "bg-blue-400 border-blue-400" : "border-gray-300"
+                          item.done ? "bg-blue-400 border-blue-400" : "border-gray-300"
                         }`}
                       >
-                        {memo.done && <span className="text-white text-[9px] font-bold">✓</span>}
+                        {item.done && <span className="text-white text-[9px] font-bold">✓</span>}
                       </button>
 
                       {/* テキスト */}
-                      <span className={`flex-1 text-sm font-medium ${memo.done ? "line-through text-gray-400" : "text-gray-800"}`}>
-                        {memo.text}
+                      <span className={`flex-1 text-sm font-medium ${item.done ? "line-through text-gray-400" : "text-gray-800"}`}>
+                        {item.text}
                       </span>
 
                       {/* 削除ボタン — 常時表示 */}
                       <button
-                        onClick={() => deleteMemo(memo.id)}
+                        onClick={() => removeFromCart(item.id)}
                         className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0 text-gray-400 active:bg-red-100 active:text-red-500 transition-all text-sm font-bold"
                       >
                         ×
@@ -345,7 +358,7 @@ export default function ShoppingPage() {
               )}
             </section>
 
-            {extraByGroup.length === 0 && memos.length === 0 && (
+            {extraByGroup.length === 0 && cart.length === 0 && (
               <div className="bg-white rounded-2xl p-12 text-center card-shadow mt-4">
                 <p className="text-5xl mb-3">🛒</p>
                 <p className="text-gray-500 text-base font-semibold">{t.shopEmpty}</p>
@@ -356,13 +369,14 @@ export default function ShoppingPage() {
         )}
       </div>
 
-      {checked.size > 0 && (
+      {/* 完了した項目をまとめて削除 */}
+      {doneCount > 0 && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-40">
           <button
-            onClick={() => setChecked(new Set())}
+            onClick={clearDone}
             className="w-full py-3.5 bg-gray-800 text-white rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"
           >
-            {t.shopClear}（{checked.size}件）
+            {t.shopClear}（{doneCount}件）
           </button>
         </div>
       )}
