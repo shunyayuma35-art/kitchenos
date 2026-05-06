@@ -119,9 +119,17 @@ export default function RecipeCard({
 
   return (
     <div
-      className="bg-white rounded-2xl card-shadow animate-slide-up overflow-hidden"
+      className="relative bg-white rounded-2xl card-shadow animate-slide-up overflow-hidden"
       style={{ animationDelay: `${index * 80}ms` }}
     >
+      {/* ── 未記録バッジ（右上）── */}
+      {cookedState === "idle" && (
+        <span className="absolute top-2.5 right-2.5 z-10 flex items-center gap-0.5
+                         bg-red-500 text-white text-[9px] font-black
+                         px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
+          ● 未記録
+        </span>
+      )}
       <div className="p-4">
         <div className="flex items-start gap-3">
           <span className="text-2xl">{cfg.icon}</span>
@@ -209,26 +217,36 @@ export default function RecipeCard({
             );
           })()}
 
-          {/* ── 料理した！ボタン ── */}
-          <button
-            onClick={handleCooked}
-            disabled={cookedState !== "idle"}
-            className={`mt-3 w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-95
-              ${cookedState === "done"
-                ? "bg-emerald-100 text-emerald-700 cursor-default"
-                : cookedState === "loading"
-                  ? "bg-amber-50 text-amber-400 cursor-wait"
-                  : "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-200"
-              }`}
-          >
-            {cookedState === "done"
-              ? earnedPts > 0
-                ? `✅ 今日作った！ +${earnedPts}P 獲得`
-                : "✅ 今日すでに料理しました"
-              : cookedState === "loading"
-                ? "記録中…"
-                : "🍳 料理した！ +30P"}
-          </button>
+          {/* ── 未記録テキスト ── */}
+          {cookedState === "idle" && (
+            <p className="mt-3 text-center text-[11px] text-red-400 font-semibold">
+              ⚠️ まだ料理記録されていません（ポイント未獲得）
+            </p>
+          )}
+
+          {/* ── 記録ボタン ── */}
+          {cookedState === "done" ? (
+            <div className="mt-2 w-full py-3 rounded-2xl bg-emerald-100 text-emerald-700
+                            font-bold text-sm text-center">
+              ✅ 記録済み
+              {earnedPts > 0 && (
+                <span className="ml-1 text-emerald-500 font-black">+{earnedPts}P 獲得</span>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handleCooked}
+              disabled={cookedState === "loading"}
+              className={`mt-2 w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-95
+                border-2 border-orange-400
+                ${cookedState === "loading"
+                  ? "bg-amber-50 text-amber-400 cursor-wait border-amber-200"
+                  : "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-300 animate-pulse"
+                }`}
+            >
+              {cookedState === "loading" ? "記録中…" : "🍳 今すぐ記録する +30P"}
+            </button>
+          )}
         </div>
       )}
     </div>
