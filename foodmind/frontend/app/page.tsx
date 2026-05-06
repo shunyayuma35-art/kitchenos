@@ -14,6 +14,10 @@ import { useT, useLang } from "@/lib/LangContext";
 import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
 import { rt, getFallbackRecipes, translateRecipe } from "@/utils/recipe_translations";
+import {
+  getPoints, addPoints, checkInToday, markCooked,
+  getLevel, getNextLevelPts, POINTS, type PointsState,
+} from "@/lib/points";
 
 // ② 画像リサイズ（最大1024px・JPEG変換）—— vision送信前処理
 async function resizeImage(
@@ -77,6 +81,9 @@ export default function Home() {
   const [demoLoading, setDemoLoading]     = useState(false);
   const [error, setError]                 = useState("");
 
+  const [pts, setPts]                   = useState<PointsState>(() =>
+    typeof window !== "undefined" ? getPoints() : { total: 0, streakDays: 0, lastVisitDate: "", cookedToday: [] }
+  );
   const [servings, setServings]         = useState(1);
   const [editingItem, setEditingItem]   = useState<FoodItem | null>(null);
   const [editQty, setEditQty]           = useState(1);
@@ -121,7 +128,47 @@ export default function Home() {
   useEffect(() => {
     loadData().finally(() => setLoading(false));
     setPhotoCount(getFridgePhotoCount());
+    // チェックイン（初回ログイン時のみポイント加算）
+    const { state } = checkInToday();
+    setPts(state);
   }, [loadData]);
+
+  // 料理完了ハンドラ — 食材消費 + ポイント + スコア再計算
+  async function handleCooked(recipe: Recipe) {
+    // 1. ポイントはRecipeCard側のmarkCookedで加算済み → stateだけ同期
+    setPts(getPoints());
+
+    // 2. レシピ食材と在庫を名前で照合して消費
+    const toConsume = recipe.ingredients
+      .map((ing) => allItems.find((item) => ing.includes(item.name)))
+      .filter((item): item is FoodItem => item !== undefined);
+
+    // 3. 期限2日以内の食材を消費したらボーナスP
+    const urgentConsumed = toConsume.filter((i) => i.expiryDays <= 2);
+    if (urgentConsumed.length > 0) {
+      addPoints(POINTS.EXPIRE_SAVE * urgentConsumed.length);
+      setPts(getPoints());
+    }
+
+    await Promise.all(toConsume.map((item) =>
+      consumeItem({ foodId: item.id, amount: 1 })
+    ));
+
+    // 4. 冷蔵庫データを再取得してスコアを更新
+    await loadData();
+
+    // 5. スコア90点ボーナス判定（loadData後に fridgeScore が変わるので useEffect 経由でなく直接判定）
+    const freshItems = await fetchItems();
+    const newScore = Math.max(0, Math.min(100,
+      100
+      - freshItems.filter((i) => i.expiryDays <= 2).length * 20
+      - freshItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 7).length * 8
+    ));
+    if (newScore >= 90) {
+      addPoints(POINTS.SCORE_90);
+      setPts(getPoints());
+    }
+  }
 
   // 言語切り替え：UIを即時更新し、レシピがある場合は同じ食材で再生成
   // lastGenParams がなければ現在の優先食材リストで代替
@@ -284,6 +331,30 @@ export default function Home() {
             <h1 className="text-white text-2xl font-bold tracking-tight">食材を入れる</h1>
             <p className="text-white/50 text-xs mt-0.5">冷蔵庫に登録</p>
             <p className="text-white/60 text-xs mt-2">{today}</p>
+            {/* ポイント・レベル表示 */}
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 bg-white/20 rounded-xl px-3 py-1">
+                <span className="text-amber-300 text-sm">⭐</span>
+                <span className="text-white font-black text-sm">{pts.total}P</span>
+                <span className="text-white/50 text-[10px] ml-0.5">Lv{getLevel(pts.total)}</span>
+              </div>
+              {pts.streakDays >= 2 && (
+                <div className="flex items-center gap-1 bg-white/20 rounded-xl px-2.5 py-1">
+                  <span className="text-orange-300 text-sm">🔥</span>
+                  <span className="text-white text-[11px] font-bold">{pts.streakDays}日</span>
+                </div>
+              )}
+              {(() => {
+                const next = getNextLevelPts(pts.total);
+                if (!next) return <span className="text-amber-300 text-[10px] font-bold">MAX!</span>;
+                const pct = Math.round((pts.total / next) * 100);
+                return (
+                  <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-300 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                );
+              })()}
+            </div>
           </div>
           {/* 言語セレクタ */}
           <div className="relative mt-1">
@@ -541,7 +612,9 @@ export default function Home() {
                   >＋</button>
                 </div>
               </div>
-              {recipes.map((r, i) => <RecipeCard key={i} recipe={r} index={i} servings={servings} />)}
+              {recipes.map((r, i) => (
+                <RecipeCard key={i} recipe={r} index={i} servings={servings} onCooked={handleCooked} />
+              ))}
               {sideDish && (
                 <p className="text-xs text-center text-amber-700 bg-amber-50 rounded-xl py-2.5 px-3 font-medium">
                   {sideDish}

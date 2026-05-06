@@ -6,6 +6,7 @@ import { useT, useLang } from "@/lib/LangContext";
 import type { Lang } from "@/lib/i18n";
 import { calculateNutrition } from "@/utils/nutrition";
 import { makeRt } from "@/utils/recipe_translations";
+import { markCooked } from "@/lib/points";
 
 const TYPE_CONFIG: Record<string, { color: string; icon: string }> = {
   時短:     { color: "bg-orange-100 text-orange-700",   icon: "⚡" },
@@ -81,13 +82,17 @@ export default function RecipeCard({
   recipe,
   index,
   servings = 1,
+  onCooked,
 }: {
   recipe: Recipe;
   index: number;
   servings?: number;
+  onCooked?: (recipe: Recipe) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [sent, setSent] = useState(false);
+  const [cookedState, setCookedState] = useState<"idle" | "loading" | "done">("idle");
+  const [earnedPts, setEarnedPts] = useState(0);
   const t = useT();
   const { lang } = useLang();
   const cfg = TYPE_CONFIG[recipe.type] ?? { color: "bg-gray-100 text-gray-600", icon: "🍴" };
@@ -101,6 +106,15 @@ export default function RecipeCard({
     addToShoppingCart(recipe.missingIngredients);
     setSent(true);
     setTimeout(() => setSent(false), 3000);
+  }
+
+  async function handleCooked() {
+    if (cookedState !== "idle") return;
+    setCookedState("loading");
+    const { earned } = markCooked(recipe.title);
+    setEarnedPts(earned);
+    if (onCooked) await onCooked(recipe);
+    setCookedState("done");
   }
 
   return (
@@ -194,6 +208,27 @@ export default function RecipeCard({
               </div>
             );
           })()}
+
+          {/* ── 料理した！ボタン ── */}
+          <button
+            onClick={handleCooked}
+            disabled={cookedState !== "idle"}
+            className={`mt-3 w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-95
+              ${cookedState === "done"
+                ? "bg-emerald-100 text-emerald-700 cursor-default"
+                : cookedState === "loading"
+                  ? "bg-amber-50 text-amber-400 cursor-wait"
+                  : "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-200"
+              }`}
+          >
+            {cookedState === "done"
+              ? earnedPts > 0
+                ? `✅ 今日作った！ +${earnedPts}P 獲得`
+                : "✅ 今日すでに料理しました"
+              : cookedState === "loading"
+                ? "記録中…"
+                : "🍳 料理した！ +30P"}
+          </button>
         </div>
       )}
     </div>
