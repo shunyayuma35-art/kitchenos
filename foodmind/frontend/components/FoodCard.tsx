@@ -1,8 +1,9 @@
 "use client";
 
 import type { FoodItem } from "@/lib/api";
-import { useT } from "@/lib/LangContext";
+import { useT, useLang } from "@/lib/LangContext";
 import { getAllergensForFood } from "@/lib/allergens";
+import { translateStaple } from "@/lib/stapleTranslations";
 
 const CATEGORY_COLOR = {
   vegetable: "bg-lime-100 text-lime-700",
@@ -20,6 +21,9 @@ interface FoodCardProps {
 
 export default function FoodCard({ item, onConsume, onEdit, onDelete }: FoodCardProps) {
   const t = useT();
+  const { lang } = useLang();
+  const displayName = translateStaple(item.name, lang);
+  const showJaName = lang !== "ja" && displayName !== item.name;
 
   const CATEGORY_LABEL = {
     vegetable: t.catVegetable,
@@ -48,7 +52,12 @@ export default function FoodCard({ item, onConsume, onEdit, onDelete }: FoodCard
       </div>
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-gray-800 text-base">{item.name}</span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-gray-800 text-base leading-tight">{displayName}</span>
+            {showJaName && (
+              <span className="text-[10px] text-gray-400 leading-tight">{item.name}</span>
+            )}
+          </div>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_COLOR[item.category]}`}>
             {CATEGORY_LABEL[item.category]}
           </span>

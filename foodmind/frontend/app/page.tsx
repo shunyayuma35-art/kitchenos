@@ -4,13 +4,54 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   fetchToday, fetchItems, generateRecipes, addItem,
   clearAllItems, consumeItem, deleteItem, updateItem, visionIdentify,
+  saveFridgePhoto, getFridgePhotoItems, getFridgePhotoCount,
 } from "@/lib/api";
-import type { FoodItem, Recipe } from "@/lib/api";
+import type { FoodItem, Recipe, IdentifiedItem } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import FoodCard from "@/components/FoodCard";
 import RecipeCard from "@/components/RecipeCard";
-import { useT } from "@/lib/LangContext";
+import { useT, useLang } from "@/lib/LangContext";
+import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
+import { rt, getFallbackRecipes, translateRecipe } from "@/utils/recipe_translations";
+
+// ② 画像リサイズ（最大1024px・JPEG変換）—— vision送信前処理
+async function resizeImage(
+  file: File,
+  maxWidth = 1024,
+  quality = 0.85,
+): Promise<{ base64: string; mediaType: "image/jpeg" }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("canvas取得失敗")); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve({
+        base64:    canvas.toDataURL("image/jpeg", quality).split(",")[1],
+        mediaType: "image/jpeg",
+      });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("画像読み込み失敗")); };
+    img.src = url;
+  });
+}
+
+// ルールベース「あと1品」提案（AI不使用・超軽量）
+function suggestSideDish(ingredients: string[], lang: Lang): string {
+  const s = ingredients.join(" ");
+  if (!/(米|麺|パン)/.test(s))                                                                   return rt("side_dish.carb",    lang);
+  if (!/(卵|肉|魚)/.test(s))                                                                     return rt("side_dish.protein", lang);
+  if (!/(トマト|キャベツ|レタス|玉ねぎ|ほうれん草)/.test(s))                                       return rt("side_dish.veggie",  lang);
+  if (!/(スープ|みそ汁|汁|コンソメ|ポタージュ|乾燥コンソメ|乾燥ポタージュ|乾燥スープ)/.test(s))    return rt("side_dish.soup",    lang);
+  return "";
+}
 
 const DEMO_ITEMS = [
   { name: "キャベツ",   category: "vegetable" as const, quantity: 1, expiryDays: 2   },
@@ -27,6 +68,7 @@ const DEMO_ITEMS = [
 
 export default function Home() {
   const t = useT();
+  const { lang, setLang } = useLang();
   const [priorityItems, setPriorityItems] = useState<FoodItem[]>([]);
   const [allItems, setAllItems]           = useState<FoodItem[]>([]);
   const [recipes, setRecipes]             = useState<Recipe[]>([]);
@@ -35,11 +77,17 @@ export default function Home() {
   const [demoLoading, setDemoLoading]     = useState(false);
   const [error, setError]                 = useState("");
 
+  const [servings, setServings]         = useState(1);
   const [editingItem, setEditingItem]   = useState<FoodItem | null>(null);
   const [editQty, setEditQty]           = useState(1);
   const [editDays, setEditDays]         = useState(3);
   const [photoLoading, setPhotoLoading] = useState(false);
-  const cameraRef = useRef<HTMLInputElement>(null);
+  const [photoCount, setPhotoCount]     = useState(0);
+  const [langOpen, setLangOpen]         = useState(false);
+  const cameraRef        = useRef<HTMLInputElement>(null);
+  const isFirstRender    = useRef(true);
+  // 最後に成功したレシピ生成のパラメータを保存（言語切り替え時の再生成に使用）
+  const lastGenParams    = useRef<{ priority: string[]; all: string[] } | null>(null);
 
   const urgentItems  = priorityItems.filter((i) => i.expiryDays <= 2);
   const warningItems = priorityItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 5);
@@ -74,7 +122,30 @@ export default function Home() {
 
   useEffect(() => {
     loadData().finally(() => setLoading(false));
+    setPhotoCount(getFridgePhotoCount());
   }, [loadData]);
+
+  // 言語切り替え時：前回と同じ食材で現在言語のレシピを再生成
+  // handleGenerate() を使わず lastGenParams を直接使うことで
+  // priorityItems が空でも・写真生成後でも確実に再生成できる
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!lastGenParams.current) return; // まだ一度も生成していない場合はスキップ
+    const { priority, all } = lastGenParams.current;
+    const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
+    // Step1: 静的テーブルで即座に部分翻訳（ちらつき防止）
+    setRecipes((prev) => prev.map((r) => translateRecipe(r, lang)));
+    // Step2: 同じ食材で現在言語のレシピをAPI再生成
+    setLoadingRecipes(true);
+    generateRecipes(priority, all, excluded, lang)
+      .then(({ recipes }) => setRecipes(recipes))
+      .catch(() => setRecipes(getFallbackRecipes(lang)))
+      .finally(() => setLoadingRecipes(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   const handleGenerate = useCallback(async (items?: FoodItem[], all?: FoodItem[]) => {
     const pri = items ?? priorityItems;
@@ -84,14 +155,18 @@ export default function Home() {
     setError("");
     try {
       const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
-      const { recipes } = await generateRecipes(pri.map((i) => i.name), allI.map((i) => i.name), excluded);
+      const photoItems = getFridgePhotoItems();
+      const priorityNames = Array.from(new Set([...pri.map((i) => i.name), ...photoItems]));
+      const allNames = Array.from(new Set([...allI.map((i) => i.name), ...photoItems]));
+      const { recipes } = await generateRecipes(priorityNames, allNames, excluded, lang);
+      lastGenParams.current = { priority: priorityNames, all: allNames };
       setRecipes(recipes);
     } catch {
       setError(t.homeErrRecipe);
     } finally {
       setLoadingRecipes(false);
     }
-  }, [priorityItems, allItems, t.homeErrRecipe]);
+  }, [priorityItems, allItems, t.homeErrRecipe, lang]);
 
   async function handleDemo() {
     setDemoLoading(true);
@@ -104,7 +179,10 @@ export default function Home() {
       setAllItems(items);
       setLoadingRecipes(true);
       const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
-      const { recipes } = await generateRecipes(d.priorityItems.map((i) => i.name), items.map((i) => i.name), excluded);
+      const priorityNames = d.priorityItems.map((i) => i.name);
+      const allNames = items.map((i) => i.name);
+      const { recipes } = await generateRecipes(priorityNames, allNames, excluded, lang);
+      lastGenParams.current = { priority: priorityNames, all: allNames };
       setRecipes(recipes);
     } catch {
       setError(t.homeErrRecipe);
@@ -139,24 +217,56 @@ export default function Home() {
   }
 
   async function handlePhotoRecipe(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    // ① 複数ファイル対応・空ファイル除外
+    const files = Array.from(e.target.files || []).filter((f) => f.size > 0);
+    if (files.length === 0) {
+      setError("画像ファイルが空です。もう一度撮影してください。");
+      return;
+    }
+
     setPhotoLoading(true);
     setError("");
     try {
-      const base64 = await new Promise<string>((res, rej) => {
-        const r = new FileReader();
-        r.onload  = () => res((r.result as string).split(",")[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
-      });
-      const { items: identified } = await visionIdentify(base64, file.type as "image/jpeg" | "image/png" | "image/webp");
-      const names = identified.map((i) => i.name);
+      // ① 全画像を並列処理（Promise.allSettled → 1枚失敗しても継続）
+      const results = await Promise.allSettled(
+        files.map(async (file) => {
+          const { base64, mediaType } = await resizeImage(file);
+          const result = await visionIdentify(base64, mediaType);
+          saveFridgePhoto(base64, mediaType, result.items.map((i) => i.name));
+          return result.items;
+        })
+      );
+
+      setPhotoCount(getFridgePhotoCount());
+
+      // ② fulfilled のみ取り出し → フラット化 → 重複削除
+      const allIdentified = results
+        .filter((r): r is PromiseFulfilledResult<IdentifiedItem[]> => r.status === "fulfilled")
+        .flatMap((r) => r.value);
+      const names = Array.from(new Set(allIdentified.map((i) => i.name)));
+
+      // ③ フォールバック：写真識別0件 → 在庫食材 → 最低限
+      const existingItems = allItems.map((i) => i.name);
+      const priorityNames =
+        names.length > 0         ? names :
+        existingItems.length > 0 ? existingItems :
+        ["卵", "ご飯"];
+
+      // ⑤⑥ generateRecipes を個別 try/catch で囲む → 失敗でも必ずレシピ表示
       const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
-      const { recipes } = await generateRecipes(names, names, excluded);
+      const combined = Array.from(new Set([...priorityNames, ...existingItems]));
+      let recipes: Recipe[];
+      try {
+        const result = await generateRecipes(priorityNames, combined, excluded, lang);
+        lastGenParams.current = { priority: priorityNames, all: combined };
+        recipes = result.recipes;
+      } catch {
+        recipes = getFallbackRecipes(lang);
+      }
       setRecipes(recipes);
-    } catch {
-      setError("写真からの読み取りに失敗しました");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`写真エラー: ${msg}`);
     } finally {
       setPhotoLoading(false);
       if (cameraRef.current) cameraRef.current.value = "";
@@ -164,15 +274,51 @@ export default function Home() {
   }
 
   const isEmpty = !loading && allItems.length === 0;
+  const sideDish = suggestSideDish(recipes.flatMap((r) => r.ingredients), lang);
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gray-50 pb-28">
+      {/* 言語ドロップダウン外クリック閉じ */}
+      {langOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
+      )}
       {/* ── ヘッダー ── */}
       <div className="gradient-header px-5 pt-12 pb-10">
-        <p className="text-white/60 text-xs uppercase tracking-widest mb-1">{t.homeSubtitle}</p>
-        <h1 className="text-white text-4xl font-bold tracking-tight">パシャ食</h1>
-        <p className="text-white/90 text-sm font-medium mt-0.5">{t.homeTagline}</p>
-        <p className="text-white/60 text-xs mt-2">{today}</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-white/60 text-xs uppercase tracking-widest mb-1">{t.homeSubtitle}</p>
+            <h1 className="text-white text-2xl font-bold tracking-tight">食材を入れる</h1>
+            <p className="text-white/50 text-xs mt-0.5">冷蔵庫に登録</p>
+            <p className="text-white/60 text-xs mt-2">{today}</p>
+          </div>
+          {/* 言語セレクタ */}
+          <div className="relative mt-1">
+            <button
+              onClick={() => setLangOpen((v) => !v)}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40
+                         text-white rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
+            >
+              <span>{LANG_META[lang].flag}</span>
+              <span className="text-xs">{LANG_META[lang].label}</span>
+              <span className="text-white/60 text-[10px]">▾</span>
+            </button>
+            {langOpen && (
+              <div className="absolute right-0 top-10 bg-white rounded-2xl shadow-xl z-50 overflow-hidden min-w-[160px]">
+                {(Object.entries(LANG_META) as [import("@/lib/i18n").Lang, typeof LANG_META[keyof typeof LANG_META]][]).map(([code, meta]) => (
+                  <button
+                    key={code}
+                    onClick={() => { setLang(code); setLangOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors
+                      ${lang === code ? "bg-amber-50 text-amber-700 font-bold" : "text-gray-700 hover:bg-gray-50"}`}
+                  >
+                    <span>{meta.flag}</span>
+                    <span>{meta.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 冷蔵庫スコア */}
         {!loading && allItems.length > 0 && (
@@ -355,18 +501,26 @@ export default function Home() {
                 ) : t.homeGenerate}
               </button>
 
-              <button
-                onClick={() => cameraRef.current?.click()}
-                disabled={loadingRecipes || photoLoading}
-                title="写真から献立を考える"
-                className="w-16 rounded-2xl bg-white border border-amber-200 text-amber-600
-                           shadow-md shadow-amber-100 text-2xl flex items-center justify-center
-                           disabled:opacity-40 active:scale-95 transition-all"
-              >
-                {photoLoading
-                  ? <span className="animate-spin w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full inline-block" />
-                  : "📸"}
-              </button>
+              <div className="relative w-16 shrink-0">
+                <button
+                  onClick={() => cameraRef.current?.click()}
+                  disabled={loadingRecipes || photoLoading}
+                  title="写真から献立を考える"
+                  className="w-full h-full min-h-[60px] rounded-2xl bg-white border border-amber-200 text-amber-600
+                             shadow-md shadow-amber-100 text-2xl flex items-center justify-center
+                             disabled:opacity-40 active:scale-95 transition-all"
+                >
+                  {photoLoading
+                    ? <span className="animate-spin w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full inline-block" />
+                    : "📸"}
+                </button>
+                {photoCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white
+                                   text-[10px] font-bold rounded-full flex items-center justify-center z-10">
+                    {photoCount}
+                  </span>
+                )}
+              </div>
               <input
                 ref={cameraRef}
                 type="file"
@@ -378,7 +532,27 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-3">
-              {recipes.map((r, i) => <RecipeCard key={i} recipe={r} index={i} />)}
+              {/* 人数セレクター */}
+              <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-2.5 card-shadow">
+                <span className="text-xs font-semibold text-gray-500">{t.homeServingNote}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setServings((s) => Math.max(1, s - 1))}
+                    className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-base flex items-center justify-center active:bg-gray-200"
+                  >−</button>
+                  <span className="text-sm font-bold text-gray-800 w-16 text-center">{t.homeServings(servings)}</span>
+                  <button
+                    onClick={() => setServings((s) => Math.min(6, s + 1))}
+                    className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-base flex items-center justify-center active:bg-amber-200"
+                  >＋</button>
+                </div>
+              </div>
+              {recipes.map((r, i) => <RecipeCard key={i} recipe={r} index={i} servings={servings} />)}
+              {sideDish && (
+                <p className="text-xs text-center text-amber-700 bg-amber-50 rounded-xl py-2.5 px-3 font-medium">
+                  {sideDish}
+                </p>
+              )}
               <button onClick={() => setRecipes([])} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">
                 {t.homeRegenerate}
               </button>

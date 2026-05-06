@@ -245,8 +245,8 @@ export default function AddPage() {
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gray-50 pb-28">
       <div className="gradient-header px-5 pt-12 pb-8">
-        <p className="text-white/60 text-[10px] uppercase tracking-widest mb-1">{t.addSubtitle}</p>
-        <h1 className="text-white text-2xl font-bold">{t.addTitle}</h1>
+        <h1 className="text-white text-2xl font-bold">食材を入れる</h1>
+        <p className="text-white/50 text-xs mt-0.5">冷蔵庫に登録</p>
       </div>
 
       <div className="px-4 -mt-4">

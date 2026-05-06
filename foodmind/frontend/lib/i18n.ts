@@ -49,6 +49,10 @@ export interface T {
   homeStatusGood: string;
   homeStatusWarn: string;
   homeStatusUrgent: string;
+  homeServings: (n: number) => string;
+  homeServingNote: string;
+  homeMissingSend: string;
+  homeMissingSent: string;
   invSubtitle: string;
   invTitle: string;
   invNItems: (n: number) => string;
@@ -118,7 +122,32 @@ export interface T {
   shopClear: string;
   grpLabels: Record<string, string>;
   locale: string;
+  lang: string;
   nameSep: string;
+  shopItemCount: (n: number) => string;
+  shopMemoTitle: string;
+  shopVoiceListen: string;
+  shopMemoPlaceholder: string;
+  shopVoiceListening: string;
+  shopVoiceInterim: (text: string) => string;
+  shopVoiceErr: string;
+  shopVoiceHint: string;
+  shopFullStock: string;
+  shopVoiceErrHttps: string;
+  shopVoiceErrBrowser: string;
+  shopVoiceErrMic: string;
+  shopVoiceErrNoSpeech: string;
+  shopVoiceErrNetwork: string;
+  shopVoiceErrAudio: string;
+  shopClearCount: (n: number) => string;
+  allergyBtn: string;
+  allergyTitle: string;
+  allergyDesc: string;
+  allergyMandatory: string;
+  allergyRecommended: string;
+  allergySave: string;
+  allergySaveCount: (n: number) => string;
+  allergenNames: Record<string, string>;
 }
 
 // ── 日本語 ──────────────────────────────────────────────
@@ -137,12 +166,13 @@ const ja: T = {
   homeGenerate: "🍽️ できる献立を考えてもらう",
   homeGenerating: "AIが献立を考えています…",
   homeRegenerate: "↻ もう一度考えてもらう",
-  homeGenerateDesc: "登録した食材とカメラ撮影で、今すぐ作れる献立を提案します。",
+  homeGenerateDesc: "登録した食材と冷蔵・冷凍・野菜室の写真から、今すぐ作れる献立をAIが提案します。",
   homeErrFetch: "データ取得に失敗しました",
   homeErrRecipe: "レシピ生成に失敗しました",
   homeUrgentLabel: "たすけて〜！", homeUrgentTap: "タップで今すぐレシピを考えてもらう →",
   homeFridgeScore: "🥬 冷蔵庫スコア", homeSavingsDesc: (n) => `今日は${n}つの食材をムダにせず使えそう`,
   homeStatusGood: "問題なし", homeStatusWarn: "一部注意", homeStatusUrgent: "要確認",
+  homeServings: (n) => `人数：${n}人前`, homeServingNote: "材料のみ人数分に調整", homeMissingSend: "不足食材を買い物リストへ", homeMissingSent: "追加しました ✓",
   invSubtitle: "My Food", invTitle: "うちの食材",
   invNItems: (n) => `${n}件の食材`,
   invUrgent: (n) => `期限注意 ${n}件`,
@@ -178,8 +208,12 @@ const ja: T = {
   shopTitle: "買い物リスト", shopSubtitle: "Shopping", shopDesc: "冷蔵庫から自動で作成",
   shopNeed: "今すぐ必要", shopSoon: "そろそろ", shopExtra: "ついで買い",
   shopEmpty: "買うものはありません", shopBought: "買った", shopClear: "完了を消す",
-  grpLabels: { "すべて":"すべて","野菜":"野菜・果物","きのこ":"きのこ","芋類":"芋類","魚介":"お魚","肉類":"お肉","卵・乳":"乳製品・卵","調味料":"調味料","スパイス":"スパイス","食用油":"食用油","缶詰":"缶詰・瓶詰め","レトルト":"レトルト","冷凍品":"冷凍食品","飲み物":"飲み物" },
-  locale: "ja-JP", nameSep: "・",
+  grpLabels: { "すべて":"すべて","野菜":"野菜・果物","きのこ":"きのこ","芋類":"芋類","魚介":"お魚","肉類":"お肉","卵・乳":"乳製品・卵","主食":"主食","調味料":"調味料","スパイス":"スパイス","食用油":"食用油","缶詰":"缶詰・瓶詰め","レトルト":"レトルト","冷凍品":"冷凍食品","飲み物":"飲み物" },
+  locale: "ja-JP", lang: "ja", nameSep: "・",
+  shopItemCount: (n) => `${n}品`, shopMemoTitle: "買い物メモ", shopVoiceListen: "話しかけてください…", shopMemoPlaceholder: "メモを入力… (例: しょうゆ 濃口)", shopVoiceListening: "聞いています…", shopVoiceInterim: (t) => `「${t}」`, shopVoiceErr: "音声入力が使えません", shopVoiceHint: "🎙️ マイクまたは入力、上のカテゴリ選択でリスト追加", shopFullStock: "食材が十分あります",
+  shopVoiceErrHttps: "音声入力はHTTPS環境が必要です。Vercelの本番URLでお試しください。", shopVoiceErrBrowser: "このブラウザは音声入力非対応です（Chrome / Safari をお試しください）", shopVoiceErrMic: "マイクが許可されていません。ブラウザの🔒からマイクを許可してください。", shopVoiceErrNoSpeech: "声が検出されませんでした。もう少し大きな声でお試しください。", shopVoiceErrNetwork: "音声入力はHTTPS本番環境でのみ動作します。\nテキスト入力をご利用ください。", shopVoiceErrAudio: "マイクが見つかりません。端末のマイクを確認してください。", shopClearCount: (n) => `（${n}件）`,
+  allergyBtn: "⚠️ アレルギー設定", allergyTitle: "食べられないものを選ぼう", allergyDesc: "入っていたら食べられないものをタップしてください", allergyMandatory: "特定原材料（必須 10品目）", allergyRecommended: "気になる食材（任意 18品目）", allergySave: "保存する", allergySaveCount: (n) => `（${n}品目を除外）`,
+  allergenNames: { shrimp:"えび", crab:"かに", walnut:"くるみ", wheat:"小麦", buckwheat:"そば", egg:"卵", dairy:"乳", peanut:"落花生", macadamia:"マカダミアナッツ", cashew:"カシューナッツ", almond:"アーモンド", abalone:"あわび", squid:"いか", salmon_roe:"いくら", orange:"オレンジ", kiwi:"キウイフルーツ", beef:"牛肉", sesame:"ごま", salmon:"さけ", mackerel:"さば", soy:"大豆", chicken:"鶏肉", banana:"バナナ", pork:"豚肉", peach:"もも", yam:"やまいも", apple:"りんご", gelatin:"ゼラチン" },
 };
 
 // ── English ─────────────────────────────────────────────
@@ -198,12 +232,13 @@ const en: T = {
   homeGenerate: "🍽️ Suggest a Meal",
   homeGenerating: "AI is thinking…",
   homeRegenerate: "↻ Try Again",
-  homeGenerateDesc: "Suggest meals you can cook right now",
+  homeGenerateDesc: "AI suggests meals using your registered ingredients and fridge photos.",
   homeErrFetch: "Failed to load data",
   homeErrRecipe: "Failed to generate recipes",
   homeUrgentLabel: "Help me!", homeUrgentTap: "Tap for recipe ideas →",
   homeFridgeScore: "🥬 Fridge Score", homeSavingsDesc: (n) => `${n} items you can use today`,
   homeStatusGood: "All Good", homeStatusWarn: "Check Soon", homeStatusUrgent: "Needs Attention",
+  homeServings: (n) => `Servings: ${n}`, homeServingNote: "Ingredients scale with servings", homeMissingSend: "Send missing to shopping list", homeMissingSent: "Added ✓",
   invSubtitle: "Inventory", invTitle: "My Pantry",
   invNItems: (n) => `${n} items`,
   invUrgent: (n) => `${n} expiring!`,
@@ -239,8 +274,12 @@ const en: T = {
   shopTitle: "Shopping List", shopSubtitle: "Shopping", shopDesc: "Auto-generated from your pantry",
   shopNeed: "Need Now", shopSoon: "Getting Low", shopExtra: "While You're There",
   shopEmpty: "Nothing to buy", shopBought: "Got it", shopClear: "Clear done",
-  grpLabels: { "すべて":"All","野菜":"Veggie","きのこ":"Mushroom","芋類":"Tuber","魚介":"Seafood","肉類":"Meat","卵・乳":"Egg/Dairy","調味料":"Seasoning","スパイス":"Spice","食用油":"Oil","缶詰":"Canned","レトルト":"Retort","冷凍品":"Frozen","飲み物":"Drinks" },
-  locale: "en-US", nameSep: " · ",
+  grpLabels: { "すべて":"All","野菜":"Veggie","きのこ":"Mushroom","芋類":"Tuber","魚介":"Seafood","肉類":"Meat","卵・乳":"Egg/Dairy","主食":"Staple","調味料":"Seasoning","スパイス":"Spice","食用油":"Oil","缶詰":"Canned","レトルト":"Ready Meal","冷凍品":"Frozen","飲み物":"Drinks" },
+  locale: "en-US", lang: "en", nameSep: " · ",
+  shopItemCount: (n) => `${n} items`, shopMemoTitle: "Shopping Notes", shopVoiceListen: "Speak now…", shopMemoPlaceholder: "Add item… (e.g. soy sauce)", shopVoiceListening: "Listening…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "Voice input unavailable", shopVoiceHint: "🎙️ Use mic, type, or tap a category", shopFullStock: "Your pantry is well stocked",
+  shopVoiceErrHttps: "Voice input requires HTTPS. Try the production URL.", shopVoiceErrBrowser: "Browser doesn't support voice (try Chrome/Safari)", shopVoiceErrMic: "Microphone not allowed. Enable it in browser settings.", shopVoiceErrNoSpeech: "No speech detected. Please speak louder.", shopVoiceErrNetwork: "Voice input works only on HTTPS. Use text instead.", shopVoiceErrAudio: "Microphone not found. Check your device.", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ Allergy Settings", allergyTitle: "Select foods to avoid", allergyDesc: "Tap items you cannot eat", allergyMandatory: "Required Allergens (10 items)", allergyRecommended: "Optional Allergens (18 items)", allergySave: "Save", allergySaveCount: (n) => ` (${n} excluded)`,
+  allergenNames: { shrimp:"Shrimp", crab:"Crab", walnut:"Walnut", wheat:"Wheat", buckwheat:"Buckwheat", egg:"Egg", dairy:"Dairy", peanut:"Peanut", macadamia:"Macadamia", cashew:"Cashew", almond:"Almond", abalone:"Abalone", squid:"Squid", salmon_roe:"Salmon Roe", orange:"Orange", kiwi:"Kiwi", beef:"Beef", sesame:"Sesame", salmon:"Salmon", mackerel:"Mackerel", soy:"Soy", chicken:"Chicken", banana:"Banana", pork:"Pork", peach:"Peach", yam:"Yam", apple:"Apple", gelatin:"Gelatin" },
 };
 
 // ── Tiếng Việt ──────────────────────────────────────────
@@ -265,6 +304,7 @@ const vi: T = {
   homeUrgentLabel: "Cứu với!", homeUrgentTap: "Nhấn để xem công thức →",
   homeFridgeScore: "🥬 Điểm Tủ Lạnh", homeSavingsDesc: (n) => `${n} món có thể dùng hôm nay`,
   homeStatusGood: "Tốt", homeStatusWarn: "Chú ý", homeStatusUrgent: "Cần xem",
+  homeServings: (n) => `Khẩu phần: ${n}`, homeServingNote: "Nguyên liệu tự điều chỉnh theo số người", homeMissingSend: "Gửi thiếu vào danh sách mua", homeMissingSent: "Đã thêm ✓",
   invSubtitle: "Kho thực phẩm", invTitle: "Quản lý kho",
   invNItems: (n) => `${n} thực phẩm`,
   invUrgent: (n) => `${n} món sắp hết!`,
@@ -300,8 +340,12 @@ const vi: T = {
   shopTitle: "Danh sách mua", shopSubtitle: "Shopping", shopDesc: "Tự tạo từ tủ lạnh",
   shopNeed: "Cần ngay", shopSoon: "Sắp cần", shopExtra: "Tiện mua",
   shopEmpty: "Không có gì cần mua", shopBought: "Đã mua", shopClear: "Xóa đã mua",
-  grpLabels: { "すべて":"Tất cả","野菜":"Rau","きのこ":"Nấm","芋類":"Củ","魚介":"Hải sản","肉類":"Thịt","卵・乳":"Trứng/Sữa","調味料":"Gia vị","スパイス":"Spice","食用油":"Dầu ăn","缶詰":"Đồ hộp","レトルト":"Đóng gói","冷凍品":"Đông lạnh","飲み物":"Đồ uống" },
-  locale: "vi-VN", nameSep: " · ",
+  grpLabels: { "すべて":"Tất cả","野菜":"Rau củ","きのこ":"Nấm","芋類":"Khoai","魚介":"Hải sản","肉類":"Thịt","卵・乳":"Trứng/Sữa","主食":"Tinh bột","調味料":"Gia vị","スパイス":"Spice","食用油":"Dầu ăn","缶詰":"Đồ hộp","レトルト":"Đóng gói","冷凍品":"Đông lạnh","飲み物":"Đồ uống" },
+  locale: "vi-VN", lang: "vi", nameSep: " · ",
+  shopItemCount: (n) => `${n} món`, shopMemoTitle: "Ghi chú mua sắm", shopVoiceListen: "Hãy nói…", shopMemoPlaceholder: "Thêm món… (VD: nước tương)", shopVoiceListening: "Đang nghe…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "Không thể dùng giọng nói", shopVoiceHint: "🎙️ Dùng mic, gõ hoặc chọn danh mục", shopFullStock: "Tủ lạnh của bạn đã đầy đủ",
+  shopVoiceErrHttps: "Nhập giọng cần HTTPS. Thử URL Vercel.", shopVoiceErrBrowser: "Trình duyệt không hỗ trợ (thử Chrome/Safari)", shopVoiceErrMic: "Microphone chưa được cho phép.", shopVoiceErrNoSpeech: "Không nghe thấy giọng. Hãy nói to hơn.", shopVoiceErrNetwork: "Chỉ hoạt động trên HTTPS. Dùng bàn phím.", shopVoiceErrAudio: "Không tìm thấy microphone.", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ Cài đặt dị ứng", allergyTitle: "Chọn thực phẩm cần tránh", allergyDesc: "Chọn những thứ bạn không thể ăn", allergyMandatory: "Dị ứng bắt buộc (10 loại)", allergyRecommended: "Dị ứng tùy chọn (18 loại)", allergySave: "Lưu", allergySaveCount: (n) => ` (loại trừ ${n})`,
+  allergenNames: { shrimp:"Tôm", crab:"Cua", walnut:"Óc chó", wheat:"Lúa mì", buckwheat:"Kiều mạch", egg:"Trứng", dairy:"Sữa", peanut:"Đậu phộng", macadamia:"Macadamia", cashew:"Hạt điều", almond:"Hạnh nhân", abalone:"Bào ngư", squid:"Mực", salmon_roe:"Trứng cá hồi", orange:"Cam", kiwi:"Kiwi", beef:"Thịt bò", sesame:"Mè", salmon:"Cá hồi", mackerel:"Cá thu", soy:"Đậu nành", chicken:"Thịt gà", banana:"Chuối", pork:"Thịt heo", peach:"Đào", yam:"Khoai", apple:"Táo", gelatin:"Gelatin" },
 };
 
 // ── မြန်မာ ──────────────────────────────────────────────
@@ -326,6 +370,7 @@ const my: T = {
   homeUrgentLabel: "ကူညီပါ!", homeUrgentTap: "ချက်နည်းကြည့်ရန် →",
   homeFridgeScore: "🥬 ရေခဲဘူး Score", homeSavingsDesc: (n) => `ယနေ့ ${n} ခုသုံးနိုင်`,
   homeStatusGood: "အဆင်ပြေ", homeStatusWarn: "သတိပြု", homeStatusUrgent: "အရေးပေါ်",
+  homeServings: (n) => `လူဦးရေ: ${n}`, homeServingNote: "ပမာဏသာ ချိန်ညှိသည်", homeMissingSend: "လိုအပ်သောပစ္စည်း ဝယ်စာရင်းထဲ", homeMissingSent: "ထည့်ပြီး ✓",
   invSubtitle: "Inventory", invTitle: "သိုလှောင်ပစ္စည်း",
   invNItems: (n) => `${n} မျိုး`,
   invUrgent: (n) => `${n} ခု သတိပြုပါ!`,
@@ -361,8 +406,12 @@ const my: T = {
   shopTitle: "ဝယ်ရမည့်စာရင်း", shopSubtitle: "Shopping", shopDesc: "ရေခဲသေတ္တာမှ အလိုအလျောက်",
   shopNeed: "ယခုလိုအပ်", shopSoon: "မကြာမီ", shopExtra: "တစ်ပါတည်း",
   shopEmpty: "ဝယ်စရာမရှိပါ", shopBought: "ဝယ်ပြီး", shopClear: "ရှင်းပါ",
-  grpLabels: { "すべて":"အားလုံး","野菜":"ဟင်းသီး","きのこ":"မှိုများ","芋類":"အာလူး","魚介":"ငါးပိုး","肉類":"အသား","卵・乳":"ဥ/နို့","調味料":"အမွှေးအကြိုင်","スパイス":"ဆေးဖက်","食用油":"ဆီ","缶詰":"သင်တိုင်း","レトルト":"ထုပ်ပိုး","冷凍品":"အေးခဲ","飲み物":"သောက်စရာ" },
-  locale: "my-MM", nameSep: "、",
+  grpLabels: { "すべて":"အားလုံး","野菜":"ဟင်းသီး","きのこ":"မှိုများ","芋類":"အာလူး","魚介":"ငါးပိုး","肉類":"အသား","卵・乳":"ဥ/နို့","主食":"အဓိကစာ","調味料":"အမွှေးအကြိုင်","スパイス":"ဆေးဖက်","食用油":"ဆီ","缶詰":"ဗူးသွပ်","レトルト":"ထုပ်ပိုး","冷凍品":"အေးခဲ","飲み物":"သောက်စရာ" },
+  locale: "my-MM", lang: "my", nameSep: "、",
+  shopItemCount: (n) => `${n} ခု`, shopMemoTitle: "မှတ်စုများ", shopVoiceListen: "ပြောပါ…", shopMemoPlaceholder: "ထည့်ပါ…", shopVoiceListening: "နားထောင်နေ…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "အသံထည့်မရပါ", shopVoiceHint: "🎙️ မိုက်ဖုန်း၊ ရိုက်၊ ဒါမှမဟုတ် အမျိုးအစားရွေး", shopFullStock: "ပစ္စည်းလုံလောက်ပါသည်",
+  shopVoiceErrHttps: "HTTPS လိုအပ်သည်", shopVoiceErrBrowser: "Browser မတည့်ပါ (Chrome/Safari သုံးပါ)", shopVoiceErrMic: "မိုက်ဖုန်းခွင့်မပြုပါ", shopVoiceErrNoSpeech: "အသံမကြားပါ", shopVoiceErrNetwork: "HTTPS သာ လုပ်ဆောင်သည်", shopVoiceErrAudio: "မိုက်ဖုန်းမတွေ့ပါ", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ အာဟာရမတည့်မှု", allergyTitle: "မစားနိုင်သောအစားအစာ ရွေးပါ", allergyDesc: "မစားနိုင်သောပစ္စည်းကိုနှိပ်ပါ", allergyMandatory: "မဖြစ်မနေ (၁၀ မျိုး)", allergyRecommended: "ဆန္ဒမူ (၁၈ မျိုး)", allergySave: "သိမ်းပါ", allergySaveCount: (n) => ` (${n} မျိုးဖယ်)`,
+  allergenNames: { shrimp:"ပုဇွန်", crab:"ဘဲကောင်", walnut:"ဝါနပ်", wheat:"ဂျုံ", buckwheat:"နုတ်ကောင်း", egg:"ဥ", dairy:"နို့", peanut:"မြေပဲ", macadamia:"မကာဒါမီးနပ်", cashew:"ကင်ဆူ", almond:"ဗာဒံ", abalone:"ပတုန်းကောင်", squid:"ငါးဥကောင်", salmon_roe:"ငါးပိုးဥ", orange:"လိမ္မော်", kiwi:"ကီဝီ", beef:"နွားသား", sesame:"နှမ်း", salmon:"ဆောမွန်", mackerel:"ကြာငါး", soy:"ပဲပိစပ်", chicken:"ကြက်", banana:"ငှက်ပျော", pork:"ဝက်သား", peach:"မောက်", yam:"ကတိုး", apple:"ပန်းသီး", gelatin:"ဂျယ်လတင်" },
 };
 
 // ── नेपाली ──────────────────────────────────────────────
@@ -387,6 +436,7 @@ const ne: T = {
   homeUrgentLabel: "बचाउनुस्!", homeUrgentTap: "रेसिपीको लागि थिच्नुस् →",
   homeFridgeScore: "🥬 फ्रिज स्कोर", homeSavingsDesc: (n) => `आज ${n} वटा खाना जोगाउन सकिन्छ`,
   homeStatusGood: "ठीक छ", homeStatusWarn: "ध्यान दिनुस्", homeStatusUrgent: "जरुरी",
+  homeServings: (n) => `सेवा: ${n} जना`, homeServingNote: "सामग्री मात्र बढाउँछ", homeMissingSend: "नभएको सामग्री किनमेल सूचीमा", homeMissingSent: "थपियो ✓",
   invSubtitle: "Inventory", invTitle: "भण्डार व्यवस्थापन",
   invNItems: (n) => `${n} वटा खाना`,
   invUrgent: (n) => `${n} वटाको म्याद सकिँदैछ!`,
@@ -422,8 +472,12 @@ const ne: T = {
   shopTitle: "किनमेल सूची", shopSubtitle: "Shopping", shopDesc: "फ्रिजबाट स्वचालित",
   shopNeed: "अहिलेनै चाहिन्छ", shopSoon: "चाँडै चाहिन्छ", shopExtra: "पाइले ल्याउनुस्",
   shopEmpty: "किन्ने कुरा छैन", shopBought: "किनियो", shopClear: "हटाउनुस्",
-  grpLabels: { "すべて":"सबै","野菜":"तरकारी","きのこ":"च्याउ","芋類":"तरुल","魚介":"माछा","肉類":"मासु","卵・乳":"अण्डा/दूध","調味料":"मसला","スパイス":"मसला","食用油":"तेल","缶詰":"डब्बा","レトルト":"प्याकेट","冷凍品":"फ्रोजन","飲み物":"पेय" },
-  locale: "ne-NP", nameSep: " · ",
+  grpLabels: { "すべて":"सबै","野菜":"तरकारी","きのこ":"च्याउ","芋類":"तरुल","魚介":"माछा","肉類":"मासु","卵・乳":"अण्डा/दूध","主食":"मुख्य खाना","調味料":"मसला","スパイス":"मसला","食用油":"तेल","缶詰":"डब्बा","レトルト":"प्याकेट","冷凍品":"फ्रोजन","飲み物":"पेय" },
+  locale: "ne-NP", lang: "ne", nameSep: " · ",
+  shopItemCount: (n) => `${n} वटा`, shopMemoTitle: "किनमेल नोट", shopVoiceListen: "बोल्नुस्…", shopMemoPlaceholder: "थप्नुस्…", shopVoiceListening: "सुनिरहेको…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "आवाज इनपुट उपलब्ध छैन", shopVoiceHint: "🎙️ माइक, टाइप वा माथिबाट छान्नुस्", shopFullStock: "सामग्री पर्याप्त छ",
+  shopVoiceErrHttps: "HTTPS चाहिन्छ", shopVoiceErrBrowser: "ब्राउजर समर्थन छैन (Chrome/Safari)", shopVoiceErrMic: "माइक अनुमति छैन", shopVoiceErrNoSpeech: "आवाज सुनिएन", shopVoiceErrNetwork: "HTTPS मात्र काम गर्छ", shopVoiceErrAudio: "माइक भेटिएन", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ एलर्जी सेटिङ", allergyTitle: "नखाने खाना छान्नुस्", allergyDesc: "जे खान सक्नुहुन्न त्यो थिच्नुस्", allergyMandatory: "अनिवार्य एलर्जेन (१० प्रकार)", allergyRecommended: "वैकल्पिक (१८ प्रकार)", allergySave: "सेभ", allergySaveCount: (n) => ` (${n} हटाइएको)`,
+  allergenNames: { shrimp:"झिंगा", crab:"गँगटो", walnut:"अखरोट", wheat:"गहुँ", buckwheat:"फापर", egg:"अण्डा", dairy:"दूध", peanut:"बदाम", macadamia:"मकाडेमिया", cashew:"काजु", almond:"बादाम", abalone:"अबलोन", squid:"विद्रुम", salmon_roe:"माछाको अण्डा", orange:"सुन्तला", kiwi:"किवी", beef:"गाईको मासु", sesame:"तिल", salmon:"सालमन", mackerel:"म्याकेरेल", soy:"सोयाबिन", chicken:"कुखुरा", banana:"केरा", pork:"सुँगुरको मासु", peach:"आरु", yam:"तरुल", apple:"स्याउ", gelatin:"जिलेटिन" },
 };
 
 // ── Indonesia ────────────────────────────────────────────
@@ -448,6 +502,7 @@ const id: T = {
   homeUrgentLabel: "Tolong!", homeUrgentTap: "Ketuk untuk resep →",
   homeFridgeScore: "🥬 Skor Kulkas", homeSavingsDesc: (n) => `${n} bahan bisa dipakai hari ini`,
   homeStatusGood: "Aman", homeStatusWarn: "Perhatian", homeStatusUrgent: "Segera",
+  homeServings: (n) => `Porsi: ${n}`, homeServingNote: "Bahan menyesuaikan jumlah porsi", homeMissingSend: "Kirim kekurangan ke daftar belanja", homeMissingSent: "Ditambahkan ✓",
   invSubtitle: "Inventaris", invTitle: "Manajemen Stok",
   invNItems: (n) => `${n} bahan`,
   invUrgent: (n) => `${n} akan kadaluarsa!`,
@@ -483,8 +538,12 @@ const id: T = {
   shopTitle: "Daftar Belanja", shopSubtitle: "Shopping", shopDesc: "Dibuat otomatis dari kulkas",
   shopNeed: "Perlu Sekarang", shopSoon: "Hampir Habis", shopExtra: "Sekalian",
   shopEmpty: "Tidak ada yang perlu dibeli", shopBought: "Sudah beli", shopClear: "Hapus selesai",
-  grpLabels: { "すべて":"Semua","野菜":"Sayuran","きのこ":"Jamur","芋類":"Umbi","魚介":"Seafood","肉類":"Daging","卵・乳":"Telur/Susu","調味料":"Bumbu","スパイス":"Rempah","食用油":"Minyak","缶詰":"Kaleng","レトルト":"Kemasan","冷凍品":"Beku","飲み物":"Minuman" },
-  locale: "id-ID", nameSep: ", ",
+  grpLabels: { "すべて":"Semua","野菜":"Sayuran","きのこ":"Jamur","芋類":"Umbi","魚介":"Seafood","肉類":"Daging","卵・乳":"Telur/Susu","主食":"Makanan Pokok","調味料":"Bumbu","スパイス":"Rempah","食用油":"Minyak","缶詰":"Kaleng","レトルト":"Siap Saji","冷凍品":"Beku","飲み物":"Minuman" },
+  locale: "id-ID", lang: "id", nameSep: ", ",
+  shopItemCount: (n) => `${n} item`, shopMemoTitle: "Catatan Belanja", shopVoiceListen: "Bicaralah…", shopMemoPlaceholder: "Tambah item…", shopVoiceListening: "Mendengarkan…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "Input suara tidak tersedia", shopVoiceHint: "🎙️ Gunakan mic, ketik, atau pilih kategori", shopFullStock: "Kulkas Anda sudah lengkap",
+  shopVoiceErrHttps: "Input suara perlu HTTPS", shopVoiceErrBrowser: "Browser tidak mendukung (gunakan Chrome/Safari)", shopVoiceErrMic: "Mikrofon tidak diizinkan", shopVoiceErrNoSpeech: "Suara tidak terdeteksi", shopVoiceErrNetwork: "Hanya bekerja di HTTPS", shopVoiceErrAudio: "Mikrofon tidak ditemukan", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ Pengaturan Alergi", allergyTitle: "Pilih makanan yang tidak bisa dimakan", allergyDesc: "Ketuk item yang tidak bisa Anda makan", allergyMandatory: "Alergen Wajib (10 item)", allergyRecommended: "Alergen Opsional (18 item)", allergySave: "Simpan", allergySaveCount: (n) => ` (${n} dikecualikan)`,
+  allergenNames: { shrimp:"Udang", crab:"Kepiting", walnut:"Walnut", wheat:"Gandum", buckwheat:"Gandum Hitam", egg:"Telur", dairy:"Susu", peanut:"Kacang tanah", macadamia:"Macadamia", cashew:"Kacang mete", almond:"Almond", abalone:"Abalon", squid:"Cumi", salmon_roe:"Telur salmon", orange:"Jeruk", kiwi:"Kiwi", beef:"Daging sapi", sesame:"Wijen", salmon:"Salmon", mackerel:"Makarel", soy:"Kedelai", chicken:"Ayam", banana:"Pisang", pork:"Daging babi", peach:"Persik", yam:"Ubi", apple:"Apel", gelatin:"Gelatin" },
 };
 
 // ── 中文（简体）─────────────────────────────────────────
@@ -509,6 +568,7 @@ const zh: T = {
   homeUrgentLabel: "救救我！", homeUrgentTap: "点击获取食谱建议 →",
   homeFridgeScore: "🥬 冰箱评分", homeSavingsDesc: (n) => `今天可以节约 ${n} 件食材`,
   homeStatusGood: "一切正常", homeStatusWarn: "注意", homeStatusUrgent: "需要处理",
+  homeServings: (n) => `人数：${n}人份`, homeServingNote: "仅食材用量按人数调整", homeMissingSend: "将缺少食材加入购物清单", homeMissingSent: "已添加 ✓",
   invSubtitle: "库存", invTitle: "库存管理",
   invNItems: (n) => `共${n}件食材`,
   invUrgent: (n) => `${n}件即将过期!`,
@@ -544,8 +604,12 @@ const zh: T = {
   shopTitle: "购物清单", shopSubtitle: "Shopping", shopDesc: "根据冰箱自动生成",
   shopNeed: "立即需要", shopSoon: "即将用完", shopExtra: "顺便买",
   shopEmpty: "没有需要购买的", shopBought: "已买", shopClear: "清除已完成",
-  grpLabels: { "すべて":"全部","野菜":"蔬菜","きのこ":"蘑菇","芋類":"薯类","魚介":"海鲜","肉類":"肉类","卵・乳":"蛋/奶","調味料":"调味料","スパイス":"香料","食用油":"食用油","缶詰":"罐头","レトルト":"速食包","冷凍品":"冷冻","飲み物":"饮料" },
-  locale: "zh-CN", nameSep: "・",
+  grpLabels: { "すべて":"全部","野菜":"蔬菜","きのこ":"蘑菇","芋類":"薯类","魚介":"海鲜","肉類":"肉类","卵・乳":"蛋/奶","主食":"主食","調味料":"调味料","スパイス":"香料","食用油":"食用油","缶詰":"罐头","レトルト":"速食包","冷凍品":"冷冻","飲み物":"饮料" },
+  locale: "zh-CN", lang: "zh", nameSep: "・",
+  shopItemCount: (n) => `${n}种`, shopMemoTitle: "购物备忘", shopVoiceListen: "请说话…", shopMemoPlaceholder: "添加… (例: 酱油)", shopVoiceListening: "正在聆听…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "语音输入不可用", shopVoiceHint: "🎙️ 使用麦克风、输入或选择上方类别", shopFullStock: "冰箱存量充足",
+  shopVoiceErrHttps: "语音输入需要HTTPS环境", shopVoiceErrBrowser: "浏览器不支持（请使用Chrome/Safari）", shopVoiceErrMic: "麦克风未授权", shopVoiceErrNoSpeech: "未检测到声音", shopVoiceErrNetwork: "仅在HTTPS下运行", shopVoiceErrAudio: "未找到麦克风", shopClearCount: (n) => `（${n}件）`,
+  allergyBtn: "⚠️ 过敏设置", allergyTitle: "选择无法食用的食材", allergyDesc: "点击您无法食用的食材", allergyMandatory: "过敏原（必须 10种）", allergyRecommended: "关注食材（任意 18种）", allergySave: "保存", allergySaveCount: (n) => `（排除${n}种）`,
+  allergenNames: { shrimp:"虾", crab:"蟹", walnut:"核桃", wheat:"小麦", buckwheat:"荞麦", egg:"鸡蛋", dairy:"乳制品", peanut:"花生", macadamia:"夏威夷果", cashew:"腰果", almond:"杏仁", abalone:"鲍鱼", squid:"鱿鱼", salmon_roe:"三文鱼子", orange:"橙子", kiwi:"猕猴桃", beef:"牛肉", sesame:"芝麻", salmon:"三文鱼", mackerel:"青花鱼", soy:"大豆", chicken:"鸡肉", banana:"香蕉", pork:"猪肉", peach:"桃子", yam:"山药", apple:"苹果", gelatin:"明胶" },
 };
 
 // ── 한국어 ───────────────────────────────────────────────
@@ -570,6 +634,7 @@ const ko: T = {
   homeUrgentLabel: "살려줘!", homeUrgentTap: "레시피 제안 →",
   homeFridgeScore: "🥬 냉장고 점수", homeSavingsDesc: (n) => `오늘 ${n}개 식재료를 아낄 수 있어요`,
   homeStatusGood: "이상 없음", homeStatusWarn: "주의", homeStatusUrgent: "확인 필요",
+  homeServings: (n) => `인원: ${n}인분`, homeServingNote: "재료 양만 인원에 맞게 조정", homeMissingSend: "부족한 재료를 쇼핑 목록에 추가", homeMissingSent: "추가됨 ✓",
   invSubtitle: "Inventory", invTitle: "재고 관리",
   invNItems: (n) => `${n}개 식재료`,
   invUrgent: (n) => `만료 임박 ${n}개!`,
@@ -605,8 +670,12 @@ const ko: T = {
   shopTitle: "쇼핑 목록", shopSubtitle: "Shopping", shopDesc: "냉장고에서 자동 생성",
   shopNeed: "지금 필요", shopSoon: "곧 필요", shopExtra: "사는 김에",
   shopEmpty: "살 것이 없습니다", shopBought: "구매함", shopClear: "완료 지우기",
-  grpLabels: { "すべて":"전체","野菜":"채소","きのこ":"버섯","芋類":"감자류","魚介":"해산물","肉類":"육류","卵・乳":"달걀/유제품","調味料":"양념","スパイス":"향신료","食用油":"식용유","缶詰":"통조림","レトルト":"레토르트","冷凍品":"냉동","飲み物":"음료" },
-  locale: "ko-KR", nameSep: "・",
+  grpLabels: { "すべて":"전체","野菜":"채소","きのこ":"버섯","芋類":"감자류","魚介":"해산물","肉類":"육류","卵・乳":"달걀/유제품","主食":"주식","調味料":"양념","スパイス":"향신료","食用油":"식용유","缶詰":"통조림","レトルト":"레토르트","冷凍品":"냉동","飲み物":"음료" },
+  locale: "ko-KR", lang: "ko", nameSep: "・",
+  shopItemCount: (n) => `${n}개`, shopMemoTitle: "쇼핑 메모", shopVoiceListen: "말씀하세요…", shopMemoPlaceholder: "추가… (예: 간장)", shopVoiceListening: "듣는 중…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "음성 입력 불가", shopVoiceHint: "🎙️ 마이크, 입력 또는 위 카테고리 선택", shopFullStock: "재료가 충분합니다",
+  shopVoiceErrHttps: "음성 입력은 HTTPS 필요", shopVoiceErrBrowser: "브라우저 미지원 (Chrome/Safari 사용)", shopVoiceErrMic: "마이크 권한 없음", shopVoiceErrNoSpeech: "음성 미감지", shopVoiceErrNetwork: "HTTPS에서만 작동", shopVoiceErrAudio: "마이크 없음", shopClearCount: (n) => ` (${n}개)`,
+  allergyBtn: "⚠️ 알레르기 설정", allergyTitle: "못 먹는 식재료를 선택하세요", allergyDesc: "먹을 수 없는 항목을 탭하세요", allergyMandatory: "의무 표시 알레르겐 (10종)", allergyRecommended: "권장 표시 (18종)", allergySave: "저장", allergySaveCount: (n) => ` (${n}종 제외)`,
+  allergenNames: { shrimp:"새우", crab:"게", walnut:"호두", wheat:"밀", buckwheat:"메밀", egg:"달걀", dairy:"우유", peanut:"땅콩", macadamia:"마카다미아", cashew:"캐슈넛", almond:"아몬드", abalone:"전복", squid:"오징어", salmon_roe:"연어알", orange:"오렌지", kiwi:"키위", beef:"쇠고기", sesame:"참깨", salmon:"연어", mackerel:"고등어", soy:"대두", chicken:"닭고기", banana:"바나나", pork:"돼지고기", peach:"복숭아", yam:"마", apple:"사과", gelatin:"젤라틴" },
 };
 
 // ── Português (Brasil) ──────────────────────────────────
@@ -631,6 +700,7 @@ const pt: T = {
   homeUrgentLabel: "Me ajuda!", homeUrgentTap: "Toque para sugestões de receita →",
   homeFridgeScore: "🥬 Nota Geladeira", homeSavingsDesc: (n) => `${n} itens para usar hoje`,
   homeStatusGood: "Tudo certo", homeStatusWarn: "Atenção", homeStatusUrgent: "Urgente",
+  homeServings: (n) => `Porções: ${n}`, homeServingNote: "Ingredientes ajustam por porção", homeMissingSend: "Enviar faltando para lista de compras", homeMissingSent: "Adicionado ✓",
   invSubtitle: "Estoque", invTitle: "Gestão de Estoque",
   invNItems: (n) => `${n} alimentos`,
   invUrgent: (n) => `${n} vencendo!`,
@@ -666,8 +736,12 @@ const pt: T = {
   shopTitle: "Lista de Compras", shopSubtitle: "Shopping", shopDesc: "Gerado automaticamente",
   shopNeed: "Preciso Agora", shopSoon: "Logo Vai Acabar", shopExtra: "Já Que Vai",
   shopEmpty: "Nada para comprar", shopBought: "Comprei", shopClear: "Limpar feitos",
-  grpLabels: { "すべて":"Todos","野菜":"Vegetal","きのこ":"Cogumelo","芋類":"Tubérculo","魚介":"Frutos do Mar","肉類":"Carne","卵・乳":"Ovo/Leite","調味料":"Tempero","スパイス":"Especiaria","食用油":"Óleo","缶詰":"Conservas","レトルト":"Embalado","冷凍品":"Congelado","飲み物":"Bebidas" },
-  locale: "pt-BR", nameSep: " · ",
+  grpLabels: { "すべて":"Todos","野菜":"Vegetal","きのこ":"Cogumelo","芋類":"Tubérculo","魚介":"Frutos do Mar","肉類":"Carne","卵・乳":"Ovo/Leite","主食":"Carboidrato","調味料":"Tempero","スパイス":"Especiaria","食用油":"Óleo","缶詰":"Conservas","レトルト":"Pronto","冷凍品":"Congelado","飲み物":"Bebidas" },
+  locale: "pt-BR", lang: "pt", nameSep: " · ",
+  shopItemCount: (n) => `${n} itens`, shopMemoTitle: "Notas de Compra", shopVoiceListen: "Fale agora…", shopMemoPlaceholder: "Adicionar… (ex: molho de soja)", shopVoiceListening: "Ouvindo…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "Entrada de voz indisponível", shopVoiceHint: "🎙️ Use mic, digitar ou selecionar categoria", shopFullStock: "Sua geladeira está bem abastecida",
+  shopVoiceErrHttps: "Entrada de voz requer HTTPS", shopVoiceErrBrowser: "Navegador não suporta (tente Chrome/Safari)", shopVoiceErrMic: "Microfone não permitido", shopVoiceErrNoSpeech: "Nenhuma fala detectada", shopVoiceErrNetwork: "Funciona apenas em HTTPS", shopVoiceErrAudio: "Microfone não encontrado", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ Configurar Alergias", allergyTitle: "Selecione o que não pode comer", allergyDesc: "Toque nos alimentos que você não pode comer", allergyMandatory: "Alérgenos Obrigatórios (10 itens)", allergyRecommended: "Alérgenos Opcionais (18 itens)", allergySave: "Salvar", allergySaveCount: (n) => ` (${n} excluídos)`,
+  allergenNames: { shrimp:"Camarão", crab:"Caranguejo", walnut:"Nozes", wheat:"Trigo", buckwheat:"Trigo sarraceno", egg:"Ovo", dairy:"Laticínios", peanut:"Amendoim", macadamia:"Macadâmia", cashew:"Caju", almond:"Amêndoa", abalone:"Orelha-de-mar", squid:"Lula", salmon_roe:"Ovas de salmão", orange:"Laranja", kiwi:"Kiwi", beef:"Carne bovina", sesame:"Gergelim", salmon:"Salmão", mackerel:"Cavala", soy:"Soja", chicken:"Frango", banana:"Banana", pork:"Carne de porco", peach:"Pêssego", yam:"Inhame", apple:"Maçã", gelatin:"Gelatina" },
 };
 
 // ── ภาษาไทย ──────────────────────────────────────────────
@@ -692,6 +766,7 @@ const th: T = {
   homeUrgentLabel: "ช่วยด้วย!", homeUrgentTap: "แตะเพื่อรับสูตรอาหาร →",
   homeFridgeScore: "🥬 คะแนนตู้เย็น", homeSavingsDesc: (n) => `วันนี้ใช้ได้ ${n} รายการ`,
   homeStatusGood: "ปกติ", homeStatusWarn: "ระวัง", homeStatusUrgent: "ด่วน",
+  homeServings: (n) => `สำหรับ: ${n} คน`, homeServingNote: "ปรับแค่ปริมาณวัตถุดิบ", homeMissingSend: "ส่งรายการขาดไปยังช้อปปิ้ง", homeMissingSent: "เพิ่มแล้ว ✓",
   invSubtitle: "คลังวัตถุดิบ", invTitle: "จัดการคลัง",
   invNItems: (n) => `${n} รายการ`,
   invUrgent: (n) => `ใกล้หมดอายุ ${n} รายการ!`,
@@ -727,8 +802,12 @@ const th: T = {
   shopTitle: "รายการช้อปปิ้ง", shopSubtitle: "Shopping", shopDesc: "สร้างอัตโนมัติจากตู้เย็น",
   shopNeed: "ต้องการทันที", shopSoon: "ใกล้หมด", shopExtra: "ซื้อตามทาง",
   shopEmpty: "ไม่มีของที่ต้องซื้อ", shopBought: "ซื้อแล้ว", shopClear: "ล้างที่เสร็จ",
-  grpLabels: { "すべて":"ทั้งหมด","野菜":"ผัก","きのこ":"เห็ด","芋類":"หัวมัน","魚介":"อาหารทะเล","肉類":"เนื้อสัตว์","卵・乳":"ไข่/นม","調味料":"เครื่องปรุง","スパイス":"เครื่องเทศ","食用油":"น้ำมัน","缶詰":"กระป๋อง","レトルト":"อาหารซอง","冷凍品":"แช่แข็ง","飲み物":"เครื่องดื่ม" },
-  locale: "th-TH", nameSep: " · ",
+  grpLabels: { "すべて":"ทั้งหมด","野菜":"ผัก","きのこ":"เห็ด","芋類":"หัวมัน","魚介":"อาหารทะเล","肉類":"เนื้อสัตว์","卵・乳":"ไข่/นม","主食":"อาหารหลัก","調味料":"เครื่องปรุง","スパイス":"เครื่องเทศ","食用油":"น้ำมัน","缶詰":"กระป๋อง","レトルト":"อาหารซอง","冷凍品":"แช่แข็ง","飲み物":"เครื่องดื่ม" },
+  locale: "th-TH", lang: "th", nameSep: " · ",
+  shopItemCount: (n) => `${n} รายการ`, shopMemoTitle: "บันทึกช้อปปิ้ง", shopVoiceListen: "พูดได้เลย…", shopMemoPlaceholder: "เพิ่มสินค้า…", shopVoiceListening: "กำลังฟัง…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "ไม่สามารถใช้เสียง", shopVoiceHint: "🎙️ ใช้ไมค์ พิมพ์ หรือเลือกหมวดหมู่", shopFullStock: "ตู้เย็นของคุณสมบูรณ์แล้ว",
+  shopVoiceErrHttps: "ต้องการ HTTPS", shopVoiceErrBrowser: "เบราว์เซอร์ไม่รองรับ (ลอง Chrome/Safari)", shopVoiceErrMic: "ไมโครโฟนไม่ได้รับอนุญาต", shopVoiceErrNoSpeech: "ไม่ตรวจพบเสียง", shopVoiceErrNetwork: "ทำงานได้เฉพาะ HTTPS", shopVoiceErrAudio: "ไม่พบไมโครโฟน", shopClearCount: (n) => ` (${n})`,
+  allergyBtn: "⚠️ ตั้งค่าแพ้อาหาร", allergyTitle: "เลือกอาหารที่แพ้", allergyDesc: "แตะสิ่งที่คุณไม่สามารถกินได้", allergyMandatory: "สารก่อภูมิแพ้บังคับ (10 รายการ)", allergyRecommended: "ทางเลือก (18 รายการ)", allergySave: "บันทึก", allergySaveCount: (n) => ` (ยกเว้น ${n} รายการ)`,
+  allergenNames: { shrimp:"กุ้ง", crab:"ปู", walnut:"วอลนัท", wheat:"ข้าวสาลี", buckwheat:"บัควีต", egg:"ไข่", dairy:"นม", peanut:"ถั่วลิสง", macadamia:"แมคาเดเมีย", cashew:"มะม่วงหิมพานต์", almond:"อัลมอนด์", abalone:"หอยเป๋าฮื้อ", squid:"ปลาหมึก", salmon_roe:"ไข่ปลาแซลมอน", orange:"ส้ม", kiwi:"กีวี", beef:"เนื้อวัว", sesame:"งา", salmon:"แซลมอน", mackerel:"ปลาทู", soy:"ถั่วเหลือง", chicken:"ไก่", banana:"กล้วย", pork:"หมู", peach:"พีช", yam:"มันเทศ", apple:"แอปเปิ้ล", gelatin:"เจลาติน" },
 };
 
 // ── 繁體中文（台灣）─────────────────────────────────────
@@ -753,6 +832,7 @@ const zhTW: T = {
   homeUrgentLabel: "救救我！", homeUrgentTap: "點擊獲取食譜建議 →",
   homeFridgeScore: "🥬 冰箱評分", homeSavingsDesc: (n) => `今天可以節約 ${n} 件食材`,
   homeStatusGood: "一切正常", homeStatusWarn: "注意", homeStatusUrgent: "需要處理",
+  homeServings: (n) => `人數：${n}人份`, homeServingNote: "僅食材用量依人數調整", homeMissingSend: "將缺少食材加入購物清單", homeMissingSent: "已新增 ✓",
   invSubtitle: "庫存", invTitle: "庫存管理",
   invNItems: (n) => `共${n}件食材`,
   invUrgent: (n) => `${n}件即將到期!`,
@@ -788,8 +868,12 @@ const zhTW: T = {
   shopTitle: "購物清單", shopSubtitle: "Shopping", shopDesc: "根據冰箱自動生成",
   shopNeed: "立即需要", shopSoon: "即將用完", shopExtra: "順便買",
   shopEmpty: "沒有需要購買的", shopBought: "已買", shopClear: "清除已完成",
-  grpLabels: { "すべて":"全部","野菜":"蔬菜","きのこ":"菇類","芋類":"薯類","魚介":"海鮮","肉類":"肉類","卵・乳":"蛋/奶","調味料":"調味料","スパイス":"香料","食用油":"食用油","缶詰":"罐頭","レトルト":"即食包","冷凍品":"冷凍","飲み物":"飲料" },
-  locale: "zh-TW", nameSep: "・",
+  grpLabels: { "すべて":"全部","野菜":"蔬菜","きのこ":"菇類","芋類":"薯類","魚介":"海鮮","肉類":"肉類","卵・乳":"蛋/奶","主食":"主食","調味料":"調味料","スパイス":"香料","食用油":"食用油","缶詰":"罐頭","レトルト":"即食包","冷凍品":"冷凍","飲み物":"飲料" },
+  locale: "zh-TW", lang: "zhTW", nameSep: "・",
+  shopItemCount: (n) => `${n}種`, shopMemoTitle: "購物備忘", shopVoiceListen: "請說話…", shopMemoPlaceholder: "新增… (例: 醬油)", shopVoiceListening: "正在聆聽…", shopVoiceInterim: (t) => `"${t}"`, shopVoiceErr: "語音輸入不可用", shopVoiceHint: "🎙️ 使用麥克風、輸入或選擇上方類別", shopFullStock: "冰箱存量充足",
+  shopVoiceErrHttps: "語音輸入需要HTTPS環境", shopVoiceErrBrowser: "瀏覽器不支援（請使用Chrome/Safari）", shopVoiceErrMic: "麥克風未授權", shopVoiceErrNoSpeech: "未偵測到聲音", shopVoiceErrNetwork: "僅在HTTPS下運作", shopVoiceErrAudio: "未找到麥克風", shopClearCount: (n) => `（${n}件）`,
+  allergyBtn: "⚠️ 過敏設定", allergyTitle: "選擇無法食用的食材", allergyDesc: "點擊您無法食用的食材", allergyMandatory: "過敏原（必須 10種）", allergyRecommended: "關注食材（任意 18種）", allergySave: "儲存", allergySaveCount: (n) => `（排除${n}種）`,
+  allergenNames: { shrimp:"蝦", crab:"蟹", walnut:"核桃", wheat:"小麥", buckwheat:"蕎麥", egg:"雞蛋", dairy:"乳製品", peanut:"花生", macadamia:"夏威夷豆", cashew:"腰果", almond:"杏仁", abalone:"鮑魚", squid:"魷魚", salmon_roe:"鮭魚卵", orange:"柳橙", kiwi:"奇異果", beef:"牛肉", sesame:"芝麻", salmon:"鮭魚", mackerel:"鯖魚", soy:"大豆", chicken:"雞肉", banana:"香蕉", pork:"豬肉", peach:"桃子", yam:"山藥", apple:"蘋果", gelatin:"明膠" },
 };
 
 export const translations: Record<Lang, T> = {
