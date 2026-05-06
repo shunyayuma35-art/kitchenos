@@ -85,8 +85,6 @@ export default function Home() {
   const [photoCount, setPhotoCount]     = useState(0);
   const [langOpen, setLangOpen]         = useState(false);
   const cameraRef        = useRef<HTMLInputElement>(null);
-  const isFirstRender    = useRef(true);
-  // 最後に成功したレシピ生成のパラメータを保存（言語切り替え時の再生成に使用）
   const lastGenParams    = useRef<{ priority: string[]; all: string[] } | null>(null);
 
   const urgentItems  = priorityItems.filter((i) => i.expiryDays <= 2);
@@ -125,27 +123,18 @@ export default function Home() {
     setPhotoCount(getFridgePhotoCount());
   }, [loadData]);
 
-  // 言語切り替え時：前回と同じ食材で現在言語のレシピを再生成
-  // handleGenerate() を使わず lastGenParams を直接使うことで
-  // priorityItems が空でも・写真生成後でも確実に再生成できる
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (!lastGenParams.current) return; // まだ一度も生成していない場合はスキップ
+  // 言語切り替え：UIを即時更新し、レシピがある場合は同じ食材で再生成
+  function handleLangChange(newLang: Lang) {
+    setLang(newLang);
+    if (!lastGenParams.current) return;
     const { priority, all } = lastGenParams.current;
     const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
-    // Step1: 静的テーブルで即座に部分翻訳（ちらつき防止）
-    setRecipes((prev) => prev.map((r) => translateRecipe(r, lang)));
-    // Step2: 同じ食材で現在言語のレシピをAPI再生成
     setLoadingRecipes(true);
-    generateRecipes(priority, all, excluded, lang)
+    generateRecipes(priority, all, excluded, newLang)
       .then(({ recipes }) => setRecipes(recipes))
-      .catch(() => setRecipes(getFallbackRecipes(lang)))
+      .catch(() => setRecipes(getFallbackRecipes(newLang)))
       .finally(() => setLoadingRecipes(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }
 
   const handleGenerate = useCallback(async (items?: FoodItem[], all?: FoodItem[]) => {
     const pri = items ?? priorityItems;
@@ -307,7 +296,7 @@ export default function Home() {
                 {(Object.entries(LANG_META) as [import("@/lib/i18n").Lang, typeof LANG_META[keyof typeof LANG_META]][]).map(([code, meta]) => (
                   <button
                     key={code}
-                    onClick={() => { setLang(code); setLangOpen(false); }}
+                    onClick={() => { handleLangChange(code); setLangOpen(false); }}
                     className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors
                       ${lang === code ? "bg-amber-50 text-amber-700 font-bold" : "text-gray-700 hover:bg-gray-50"}`}
                   >
