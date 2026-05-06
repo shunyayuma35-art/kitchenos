@@ -17,27 +17,46 @@ export async function POST(req: NextRequest) {
   }
 
   const priorityList = (items as string[]).join("、");
-  const allList = allItems?.length ? `\n全在庫食材（参考）：${(allItems as string[]).join("、")}` : "";
+  const allList = allItems?.length ? `全在庫食材（参考）：${(allItems as string[]).join("、")}\n` : "";
   const allergenNote = allergenExclusions?.length
-    ? `\n⚠️ 除外アレルゲン（使用禁止）：${(allergenExclusions as string[]).join("、")}`
+    ? `⚠️ FORBIDDEN ingredients (never use): ${(allergenExclusions as string[]).join(", ")}\n`
     : "";
 
   const targetLang = lang && lang !== "ja" ? LANG_NAME[lang] : null;
-  const langNote = targetLang
-    ? `\n\n重要：JSON内のtitle・ingredients・missingIngredients・substitutions・stepsの値はすべて${targetLang}で記述すること。typeとcookTimeとdifficultyは変更しない。`
-    : "";
 
-  try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: `あなたは家庭料理AIアシスタントです。
+  // 言語指示をシステムプロンプトに分離して確実に適用
+  const systemPrompt = targetLang
+    ? `You are a home cooking AI assistant. CRITICAL RULE: You MUST write ALL recipe content (title, ingredients, missingIngredients, substitutions, steps) in ${targetLang}. Do NOT use Japanese for these fields. The fields "type", "cookTime", "difficulty" must stay in Japanese exactly as specified.`
+    : `あなたは家庭料理AIアシスタントです。`;
 
-優先使用食材（期限が近い）：${priorityList}${allList}${allergenNote}${langNote}
+  const userPrompt = targetLang
+    ? `Create 3 recipes using these priority ingredients: ${priorityList}
+${allList}${allergenNote}
+Rules:
+- Must use the priority ingredients
+- Suggest substitutions for missing items
+- One each of: 時短 (quick), バランス (balanced), アレンジ (creative)
+- Realistic home cooking level
+- 4 to 10 detailed steps (more for complex dishes)
+- Include cooking time and difficulty
+- 1 serving portions
+- ALL text in title/ingredients/missingIngredients/substitutions/steps fields MUST be in ${targetLang}
 
+Return ONLY a JSON array (no explanation, no code block):
+[
+  {
+    "title": "recipe name in ${targetLang}",
+    "type": "時短 | バランス | アレンジ",
+    "cookTime": "15分",
+    "difficulty": "簡単 | 普通 | 本格",
+    "ingredients": ["ingredient with amount in ${targetLang}"],
+    "missingIngredients": ["missing item name in ${targetLang}"],
+    "substitutions": ["substitution in ${targetLang}"],
+    "steps": ["step in ${targetLang}"]
+  }
+]`
+    : `優先使用食材（期限が近い）：${priorityList}
+${allList}${allergenNote}
 上記の食材を使ったレシピを3つ作ってください。
 
 条件：
@@ -60,11 +79,16 @@ export async function POST(req: NextRequest) {
     "ingredients": ["使用食材（1人前の分量付き）"],
     "missingIngredients": ["不足食材名のみ"],
     "substitutions": ["代替案"],
-    "steps": ["手順の説明", "手順の説明"]
+    "steps": ["手順の説明"]
   }
-]`,
-        },
-      ],
+]`;
+
+  try {
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 3000,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";

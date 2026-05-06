@@ -124,10 +124,15 @@ export default function Home() {
   }, [loadData]);
 
   // 言語切り替え：UIを即時更新し、レシピがある場合は同じ食材で再生成
+  // lastGenParams がなければ現在の優先食材リストで代替
   function handleLangChange(newLang: Lang) {
     setLang(newLang);
-    if (!lastGenParams.current) return;
-    const { priority, all } = lastGenParams.current;
+
+    const priority = lastGenParams.current?.priority
+      ?? (priorityItems.length > 0 ? priorityItems.map((i) => i.name) : null);
+    if (!priority || priority.length === 0) return;
+
+    const all = lastGenParams.current?.all ?? allItems.map((i) => i.name);
     const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
     setLoadingRecipes(true);
     generateRecipes(priority, all, excluded, newLang)
