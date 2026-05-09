@@ -93,3 +93,27 @@
 .animate-fuwa-fuwa { animation: fuwa-fuwa 3s ease-in-out infinite; transform-origin: 50% 100%; }
 .animate-yura-yura { animation: yura-yura 1.4s ease-in-out infinite; transform-origin: 50% 100%; }
 .animate-puru-puru { animation: puru-puru 0.55s ease-in-out infinite; transform-origin: 50% 50%; }
+
+/* ── DailyCharacter: ぷるぷる（scale） ── */
+@keyframes purru {
+  0%, 100% { transform: scale(1, 1); }
+  30%       { transform: scale(1.06, 0.95); }
+  60%       { transform: scale(0.97, 1.04); }
+}
+
+/* ── DailyCharacter: 跳ねる（translateY + squish） ── */
+@keyframes jump {
+  0%, 100% { transform: translateY(0)     scale(1,    1   ); }
+  30%      { transform: translateY(-14px) scale(0.93, 1.07); }
+  55%      { transform: translateY(-6px)  scale(0.97, 1.03); }
+  70%      { transform: translateY(0)     scale(1.06, 0.95); }
+  85%      { transform: translateY(-3px)  scale(1,    1   ); }
+}
+
+/* 強弱バリアント */
+.animate-purru-low  { animation: purru 2.0s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-purru-mid  { animation: purru 1.5s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-purru-high { animation: purru 1.0s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-jump-low   { animation: jump  1.8s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-jump-mid   { animation: jump  1.3s ease-in-out infinite; transform-origin: 50% 100%; }
+.animate-jump-high  { animation: jump  0.9s ease-in-out infinite; transform-origin: 50% 100%; }

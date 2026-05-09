@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { fetchItems, consumeItem, deleteItem } from "@/lib/api";
 import type { FoodItem, Category } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
+import DailyCharacter from "@/components/DailyCharacter";
 import { useT } from "@/lib/LangContext";
 
 type Tab = Category | "all";
@@ -94,56 +95,7 @@ export default function InventoryPage() {
             ))
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center card-shadow">
-              {/* ぷるんぷるん トマトキャラクター */}
-              <div className="flex justify-center mb-3">
-                <svg
-                  viewBox="0 0 100 115"
-                  className="w-24 h-28 animate-veggie-bounce"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* 影 */}
-                  <ellipse cx="50" cy="112" rx="18" ry="3.5" fill="#000" opacity="0.07" />
-
-                  {/* 葉っぱ（ヘタ） */}
-                  <path d="M50,30 Q44,18 36,20 Q42,28 40,34" fill="#4CAF50" />
-                  <path d="M50,30 Q50,16 50,12 Q48,22 50,30" fill="#43A047" />
-                  <path d="M50,30 Q56,18 64,20 Q58,28 60,34" fill="#4CAF50" />
-                  <path d="M50,30 Q42,22 38,14 Q46,24 50,30" fill="#66BB6A" />
-                  <path d="M50,30 Q58,22 62,14 Q54,24 50,30" fill="#66BB6A" />
-                  {/* ヘタの付け根 */}
-                  <ellipse cx="50" cy="32" rx="9" ry="5" fill="#388E3C" />
-
-                  {/* ボディ（トマト） */}
-                  <circle cx="50" cy="70" r="34" fill="#E53935" />
-                  <circle cx="50" cy="68" r="34" fill="#F44336" />
-                  {/* ハイライト */}
-                  <ellipse cx="38" cy="50" rx="9" ry="6" fill="white" opacity="0.25" transform="rotate(-20 38 50)" />
-
-                  {/* 筋（トマトの縦筋） */}
-                  <path d="M50,36 Q48,70 50,104" stroke="#D32F2F" strokeWidth="1" opacity="0.3" fill="none" />
-                  <path d="M50,36 Q38,55 36,90" stroke="#D32F2F" strokeWidth="0.8" opacity="0.2" fill="none" />
-                  <path d="M50,36 Q62,55 64,90" stroke="#D32F2F" strokeWidth="0.8" opacity="0.2" fill="none" />
-
-                  {/* 目（白目） */}
-                  <circle cx="40" cy="66" r="6.5" fill="white" />
-                  <circle cx="60" cy="66" r="6.5" fill="white" />
-                  {/* 瞳 */}
-                  <circle cx="41" cy="67" r="3.5" fill="#1A1A1A" />
-                  <circle cx="61" cy="67" r="3.5" fill="#1A1A1A" />
-                  {/* キラキラ */}
-                  <circle cx="42.5" cy="65.5" r="1.4" fill="white" />
-                  <circle cx="62.5" cy="65.5" r="1.4" fill="white" />
-                  <circle cx="43.5" cy="68.5" r="0.6" fill="white" />
-                  <circle cx="63.5" cy="68.5" r="0.6" fill="white" />
-
-                  {/* ほっぺ */}
-                  <ellipse cx="30" cy="74" rx="8" ry="5" fill="#FF8FAB" opacity="0.5" />
-                  <ellipse cx="70" cy="74" rx="8" ry="5" fill="#FF8FAB" opacity="0.5" />
-
-                  {/* 口（笑顔） */}
-                  <path d="M 40 77 Q 50 87 60 77" stroke="#1A1A1A" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-                </svg>
-              </div>
+              <DailyCharacter />
               <p className="text-gray-400 text-base">{t.invEmpty}</p>
             </div>
           ) : (
