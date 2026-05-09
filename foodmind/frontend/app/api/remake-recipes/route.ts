@@ -4,10 +4,19 @@ import Anthropic from "@anthropic-ai/sdk";
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
-  const { leftover } = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "リクエストの形式が正しくありません" }, { status: 400 });
+  }
 
+  const { leftover } = body;
   if (!leftover || !String(leftover).trim()) {
     return NextResponse.json({ error: "残り物の名前は必須です" }, { status: 400 });
+  }
+  if (String(leftover).trim().length > 100) {
+    return NextResponse.json({ error: "入力は100文字以内にしてください" }, { status: 400 });
   }
 
   const prompt = `「${String(leftover).trim()}」が余っています。これをリメークする家庭向けのアイデアを3つ提案してください。
