@@ -10,6 +10,8 @@ import type { FoodItem, Recipe, IdentifiedItem } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import FoodCard from "@/components/FoodCard";
 import RecipeCard from "@/components/RecipeCard";
+import RemakeCard from "@/components/RemakeCard";
+import RamenRemakeCard from "@/components/RamenRemakeCard";
 import { useT, useLang } from "@/lib/LangContext";
 import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
@@ -625,6 +627,22 @@ export default function Home() {
               </button>
             </div>
           )}
+        </section>
+
+        {/* ── 残り物リメークAI ── */}
+        <section>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+            残り物リメーク
+          </h2>
+          <RemakeCard />
+        </section>
+
+        {/* ── 即席ラーメンアレンジAI ── */}
+        <section>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+            即席ラーメンアレンジ
+          </h2>
+          <RamenRemakeCard />
         </section>
       </div>
 
