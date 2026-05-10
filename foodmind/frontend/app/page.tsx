@@ -333,7 +333,7 @@ export default function Home() {
             <p className="text-white/60 text-xs uppercase tracking-widest mb-1">{t.homeSubtitle}</p>
             <h1 className="text-white text-2xl font-bold tracking-tight">食材を入れる</h1>
             <p className="text-white/50 text-xs mt-0.5">冷蔵庫に登録</p>
-            <p className="text-white/60 text-xs mt-2">{today}</p>
+            <p className="text-white/60 text-xs mt-2" suppressHydrationWarning>{today}</p>
             {/* ポイント・レベル表示 */}
             <div className="flex items-center gap-2 mt-2">
               <div className="flex items-center gap-1 bg-white/20 rounded-xl px-3 py-1">

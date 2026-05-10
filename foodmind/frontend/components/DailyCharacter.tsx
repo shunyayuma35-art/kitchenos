@@ -34,14 +34,18 @@ function Shad() {
 function Face({ cy = 68 }: { cy?: number }) {
   return (
     <>
-      <circle cx="40" cy={cy}       r="6.5" fill="white" />
-      <circle cx="60" cy={cy}       r="6.5" fill="white" />
-      <circle cx="41" cy={cy + 1}   r="3.5" fill="#1A1A1A" />
-      <circle cx="61" cy={cy + 1}   r="3.5" fill="#1A1A1A" />
-      <circle cx="42.5" cy={cy - 1.5} r="1.4" fill="white" />
-      <circle cx="62.5" cy={cy - 1.5} r="1.4" fill="white" />
-      <circle cx="43.5" cy={cy + 2}   r="0.6" fill="white" />
-      <circle cx="63.5" cy={cy + 2}   r="0.6" fill="white" />
+      <g className="animate-veggie-eye-blink">
+        <circle cx="40" cy={cy}         r="6.5" fill="white" />
+        <circle cx="41" cy={cy + 1}     r="3.5" fill="#1A1A1A" />
+        <circle cx="42.5" cy={cy - 1.5} r="1.4" fill="white" />
+        <circle cx="43.5" cy={cy + 2}   r="0.6" fill="white" />
+      </g>
+      <g className="animate-veggie-eye-blink">
+        <circle cx="60" cy={cy}         r="6.5" fill="white" />
+        <circle cx="61" cy={cy + 1}     r="3.5" fill="#1A1A1A" />
+        <circle cx="62.5" cy={cy - 1.5} r="1.4" fill="white" />
+        <circle cx="63.5" cy={cy + 2}   r="0.6" fill="white" />
+      </g>
       <ellipse cx="30" cy={cy + 8} rx="8" ry="5" fill="#FF8FAB" opacity="0.5" />
       <ellipse cx="70" cy={cy + 8} rx="8" ry="5" fill="#FF8FAB" opacity="0.5" />
       <path
@@ -626,6 +630,116 @@ function SvgStarMushroom() {
   );
 }
 
+// ─── 追加レアキャラ SVG ───────────────────────────────────────
+
+// 月光猫 (cold)
+function SvgMoonlightCat() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rc-moon" cx="40%" cy="35%" r="65%">
+          <stop offset="0%"   stopColor="#E8F0FF" />
+          <stop offset="100%" stopColor="#6878C0" />
+        </radialGradient>
+      </defs>
+      <Shad />
+      <polygon points="24,44 20,20 40,36" fill="#7888C0" />
+      <polygon points="76,44 80,20 60,36" fill="#7888C0" />
+      <polygon points="26,42 23,24 38,36" fill="#AAB8E0" />
+      <polygon points="74,42 77,24 62,36" fill="#AAB8E0" />
+      <ellipse cx="50" cy="76" rx="28" ry="30" fill="url(#rc-moon)" />
+      <ellipse cx="50" cy="58" rx="28" ry="26" fill="url(#rc-moon)" />
+      <path d="M 78 92 Q 96 82 90 70 Q 86 78 78 88" fill="#7888C0" />
+      {/* 胸の三日月 */}
+      <path d="M 44 74 Q 50 70 56 74 Q 53 82 50 80 Q 47 82 44 74 Z" fill="#D0DCFF" opacity="0.8" />
+      <ellipse cx="36" cy="46" rx="5" ry="9" fill="white" opacity="0.3" />
+      <Face cy={56} />
+      <path d="M 30 61 L 14 57" stroke="#8898C8" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <path d="M 30 64 L 14 64" stroke="#8898C8" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <path d="M 70 61 L 86 57" stroke="#8898C8" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <path d="M 70 64 L 86 64" stroke="#8898C8" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// 炎ピーマン (stardust)
+function SvgFlamePepper() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rc-flame" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#FF2010" />
+          <stop offset="100%" stopColor="#FF8030" />
+        </linearGradient>
+      </defs>
+      <Shad />
+      <rect x="47" y="14" width="6" height="16" rx="3" fill="#2A7010" />
+      <path d="M 50 18 Q 60 10 63 4" stroke="#3A8820" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <ellipse cx="50" cy="72" rx="28" ry="36" fill="url(#rc-flame)" />
+      <ellipse cx="50" cy="70" rx="25" ry="33" fill="#FF4A25" />
+      {/* ロブの縦溝 */}
+      <path d="M 36 36 Q 34 72 38 104" stroke="#CC1808" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+      <path d="M 64 36 Q 66 72 62 104" stroke="#CC1808" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round" />
+      <ellipse cx="38" cy="50" rx="5" ry="13" fill="white" opacity="0.28" transform="rotate(-8 38 50)" />
+      <Face cy={68} />
+    </svg>
+  );
+}
+
+// 霜牛乳の精霊 (cold)
+function SvgFrostMilk() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rc-frost" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#F4FAFF" />
+          <stop offset="100%" stopColor="#88C4F0" />
+        </linearGradient>
+      </defs>
+      <Shad />
+      {/* 注ぎ口 */}
+      <rect x="38" y="16" width="24" height="10" rx="5" fill="#70B0E0" />
+      {/* 首 */}
+      <rect x="40" y="24" width="20" height="14" rx="6" fill="#90C8F0" />
+      {/* 本体 */}
+      <rect x="22" y="36" width="56" height="70" rx="12" fill="url(#rc-frost)" />
+      <path d="M 26 60 Q 50 56 74 60" stroke="#B0D8F0" strokeWidth="1.5" fill="none" />
+      <path d="M 25 74 Q 50 70 75 74" stroke="#B0D8F0" strokeWidth="1.5" fill="none" />
+      {/* 氷晶 */}
+      <path d="M 16 48 L 20 46 M 20 46 L 18 42 M 20 46 L 24 46" stroke="#70B8F0" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+      <path d="M 84 62 L 80 60 M 80 60 L 82 56 M 80 60 L 76 60" stroke="#70B8F0" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+      <ellipse cx="34" cy="56" rx="4" ry="14" fill="white" opacity="0.5" />
+      <Face cy={74} />
+    </svg>
+  );
+}
+
+// プリズム玉ねぎ (aurora)
+function SvgPrismOnion() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rc-prism" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#FF8888" />
+          <stop offset="25%"  stopColor="#FFE060" />
+          <stop offset="50%"  stopColor="#80EC80" />
+          <stop offset="75%"  stopColor="#80B8FF" />
+          <stop offset="100%" stopColor="#CC70FF" />
+        </linearGradient>
+      </defs>
+      <Shad />
+      <path d="M 44 26 Q 40 12 38 5"  stroke="#4A9E28" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M 56 26 Q 60 12 62 5"  stroke="#4A9E28" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <ellipse cx="50" cy="28" rx="12" ry="6" fill="#5BAE36" />
+      <ellipse cx="50" cy="70" rx="28" ry="34" fill="url(#rc-prism)" />
+      <ellipse cx="50" cy="72" rx="22" ry="28" fill="rgba(255,255,255,0.20)" />
+      <ellipse cx="50" cy="74" rx="16" ry="22" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="38" cy="50" rx="5"  ry="10" fill="white" opacity="0.35" />
+      <Face cy={72} />
+    </svg>
+  );
+}
+
 // ─── レア演出レイヤー ─────────────────────────────────────────
 function RareEffectLayer({ effect }: { effect: RareEffect }) {
   return (
@@ -699,6 +813,10 @@ const RARE_CHARS: RareCharDef[] = [
   { name: "伝説の卵",         anim: "purru", intensity: "high", effect: "glow",     Svg: SvgLegendaryEgg     },
   { name: "オーロラにんじん", anim: "purru", intensity: "high", effect: "aurora",   Svg: SvgAuroraCarrot     },
   { name: "星キノコ",         anim: "purru", intensity: "high", effect: "stardust", Svg: SvgStarMushroom     },
+  { name: "月光ねこ",         anim: "jump",  intensity: "high", effect: "cold",     Svg: SvgMoonlightCat     },
+  { name: "炎ピーマン",       anim: "jump",  intensity: "high", effect: "stardust", Svg: SvgFlamePepper      },
+  { name: "霜牛乳の精霊",     anim: "purru", intensity: "high", effect: "cold",     Svg: SvgFrostMilk        },
+  { name: "プリズム玉ねぎ",   anim: "purru", intensity: "high", effect: "aurora",   Svg: SvgPrismOnion       },
 ];
 
 // ─── メインコンポーネント ─────────────────────────────────────
