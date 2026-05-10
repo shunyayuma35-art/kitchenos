@@ -122,13 +122,39 @@ export default function RecipeCard({
       className="relative bg-white rounded-2xl card-shadow animate-slide-up overflow-hidden"
       style={{ animationDelay: `${index * 80}ms` }}
     >
-      {/* ── 未記録バッジ（右上）── */}
+      {/* ── 未記録バッジ（まるっとゆるかわ猫ちゃん）── */}
       {cookedState === "idle" && (
-        <span className="absolute top-2.5 right-2.5 z-10 flex items-center gap-0.5
-                         bg-red-500 text-white text-[9px] font-black
-                         px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
-          ● 未記録
-        </span>
+        <div className="absolute top-2 right-2 z-10 badge-wobble">
+          {/* 猫耳 */}
+          <div className="absolute -top-1.5 inset-x-0 flex justify-between px-1 pointer-events-none">
+            <div className="w-2 h-2 bg-red-500 rounded-sm -rotate-12" />
+            <div className="w-2 h-2 bg-red-500 rounded-sm rotate-12" />
+          </div>
+          {/* バッジ本体：冷気ひんやり影つき */}
+          <span
+            className="flex items-center gap-0.5 bg-red-500 text-white text-[10px] font-black
+                       px-2.5 py-1 rounded-full"
+            style={{
+              boxShadow:
+                "0 2px 6px rgba(239,68,68,0.35), 0 4px 14px rgba(147,197,253,0.3)",
+            }}
+          >
+            ● 未記録
+          </span>
+        </div>
+      )}
+
+      {/* ── 記録済みバッジ（緑・ふわっと出現）── */}
+      {cookedState === "done" && (
+        <div className="absolute top-2 right-2 z-10 badge-pop">
+          <span
+            className="flex items-center gap-0.5 bg-green-500 text-white text-[10px] font-black
+                       px-2.5 py-1 rounded-full"
+            style={{ boxShadow: "0 2px 8px rgba(34,197,94,0.4)" }}
+          >
+            ✓ 記録済み
+          </span>
+        </div>
       )}
       <div className="p-4">
         <div className="flex items-start gap-3">

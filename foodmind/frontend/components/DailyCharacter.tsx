@@ -1,18 +1,24 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 // ─── 定数 ─────────────────────────────────────────────────────
 export const RANDOM_CHANCE = 0.20; // ランダム出現確率 — ここで調整
+export const RARE_CHANCE   = 0.01; // レアキャラ出現確率（1%）— ここで調整
 
 type Animation = "purru" | "jump";
 type Intensity = "low" | "mid" | "high";
+type RareEffect = "glow" | "cold" | "aurora" | "stardust";
 
 interface CharDef {
   name:      string;
   anim:      Animation;
   intensity: Intensity;
   Svg:       React.ComponentType;
+}
+
+interface RareCharDef extends CharDef {
+  effect: RareEffect;
 }
 
 const ANIM_CLASS: Record<Animation, Record<Intensity, string>> = {
@@ -308,6 +314,354 @@ function SvgCorn() {
   );
 }
 
+// ─── 追加：新規ランダムキャラ SVG ────────────────────────────
+
+function SvgCabbage() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <circle cx="50" cy="62" r="30" fill="#7DC95E" />
+      <circle cx="34" cy="54" r="18" fill="#90D970" />
+      <circle cx="66" cy="54" r="18" fill="#90D970" />
+      <circle cx="50" cy="46" r="20" fill="#A8E880" />
+      <ellipse cx="50" cy="70" rx="22" ry="16" fill="#7DC95E" />
+      <ellipse cx="36" cy="46" rx="5" ry="9" fill="white" opacity="0.25" />
+      <Face cy={66} />
+    </svg>
+  );
+}
+
+function SvgBanana() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <path d="M 30 80 Q 20 50 40 30 Q 60 14 78 24 Q 65 20 55 35 Q 42 56 48 86 Z" fill="#FFE033" />
+      <path d="M 32 78 Q 23 52 42 33 Q 60 18 75 26 Q 63 22 54 37 Q 43 57 49 83 Z" fill="#FFF280" />
+      <path d="M 40 30 Q 57 16 75 24" stroke="#C8A020" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <Face cy={64} />
+    </svg>
+  );
+}
+
+function SvgCat() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <polygon points="24,44 20,20 40,36" fill="#F0B8C0" />
+      <polygon points="76,44 80,20 60,36" fill="#F0B8C0" />
+      <polygon points="26,42 23,24 38,36" fill="#FFD8E0" />
+      <polygon points="74,42 77,24 62,36" fill="#FFD8E0" />
+      <ellipse cx="50" cy="76" rx="28" ry="30" fill="#F8E0D0" />
+      <ellipse cx="50" cy="58" rx="28" ry="26" fill="#F8E0D0" />
+      <path d="M 78 92 Q 96 82 90 70 Q 86 78 78 88" fill="#ECC8B8" />
+      <ellipse cx="36" cy="46" rx="5" ry="9" fill="white" opacity="0.3" />
+      <Face cy={56} />
+      <path d="M 30 61 L 14 57" stroke="#C8A090" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+      <path d="M 30 64 L 14 64" stroke="#C8A090" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+      <path d="M 70 61 L 86 57" stroke="#C8A090" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+      <path d="M 70 64 L 86 64" stroke="#C8A090" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SvgFridgeSpirit() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <ellipse cx="20" cy="64" rx="8" ry="5" fill="#C8E8FF" transform="rotate(-20 20 64)" />
+      <ellipse cx="80" cy="64" rx="8" ry="5" fill="#C8E8FF" transform="rotate(20 80 64)" />
+      <rect x="22" y="28" width="56" height="78" rx="14" fill="#D8F0FF" />
+      <rect x="22" y="28" width="56" height="36" rx="14" fill="#EEF8FF" />
+      <rect x="64" y="40" width="4" height="12" rx="2" fill="#A0C8E8" />
+      <rect x="64" y="78" width="4" height="12" rx="2" fill="#A0C8E8" />
+      <rect x="22" y="62" width="56" height="3" rx="1.5" fill="#B8D8F0" />
+      <ellipse cx="36" cy="38" rx="5" ry="7" fill="white" opacity="0.4" />
+      <Face cy={72} />
+    </svg>
+  );
+}
+
+function SvgOnionWhite() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <path d="M 44 26 Q 40 12 38 5"  stroke="#8BC870" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M 56 26 Q 60 12 62 5"  stroke="#8BC870" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <ellipse cx="50" cy="28" rx="12" ry="6" fill="#9AD880" />
+      <ellipse cx="50" cy="70" rx="28" ry="34" fill="#F0EEE8" />
+      <ellipse cx="50" cy="72" rx="22" ry="28" fill="#F8F6F0" />
+      <ellipse cx="50" cy="74" rx="16" ry="22" fill="#FFFFFF" />
+      <ellipse cx="38" cy="50" rx="5"  ry="10" fill="white" opacity="0.5" />
+      <Face cy={72} />
+    </svg>
+  );
+}
+
+function SvgSweetPotato() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <path d="M 44 26 Q 40 16 38 10" stroke="#8B6C34" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M 52 24 Q 54 14 56 8"  stroke="#6B9C44" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <ellipse cx="50" cy="66" rx="26" ry="36" fill="#9B4C8C" />
+      <ellipse cx="50" cy="64" rx="24" ry="34" fill="#B05CA0" />
+      <path d="M 28 54 Q 50 48 72 54" stroke="#8A3C7C" strokeWidth="1.5" fill="none" />
+      <path d="M 26 66 Q 50 60 74 66" stroke="#8A3C7C" strokeWidth="1.5" fill="none" />
+      <path d="M 28 78 Q 50 72 72 78" stroke="#8A3C7C" strokeWidth="1.5" fill="none" />
+      <ellipse cx="36" cy="46" rx="5" ry="10" fill="white" opacity="0.25" />
+      <Face cy={64} />
+    </svg>
+  );
+}
+
+function SvgShrimp() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <path d="M 50 100 Q 34 108 30 114" stroke="#F08060" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <path d="M 50 100 Q 66 108 70 114" stroke="#F08060" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <path d="M 50 30 Q 72 42 74 62 Q 76 82 60 98 Q 54 104 50 100 Q 46 104 40 98 Q 24 82 26 62 Q 28 42 50 30 Z" fill="#F9A080" />
+      <path d="M 50 32 Q 69 44 71 62 Q 73 80 60 95 Q 55 101 50 98 Q 45 101 40 95 Q 27 80 29 62 Q 31 44 50 32 Z" fill="#FFB898" />
+      <path d="M 30 60 L 16 54" stroke="#F08060" strokeWidth="2" strokeLinecap="round" />
+      <path d="M 28 70 L 14 68" stroke="#F08060" strokeWidth="2" strokeLinecap="round" />
+      <path d="M 70 60 L 84 54" stroke="#F08060" strokeWidth="2" strokeLinecap="round" />
+      <path d="M 72 70 L 86 68" stroke="#F08060" strokeWidth="2" strokeLinecap="round" />
+      <ellipse cx="38" cy="46" rx="5" ry="8" fill="white" opacity="0.3" />
+      <Face cy={62} />
+    </svg>
+  );
+}
+
+function SvgTofu() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <rect x="18" y="36" width="64" height="66" rx="10" fill="#F0EEE0" />
+      <rect x="20" y="38" width="60" height="62" rx="9"  fill="#FAFAF0" />
+      <circle cx="34" cy="54" r="4" fill="#E8E6D8" />
+      <circle cx="50" cy="54" r="4" fill="#E8E6D8" />
+      <circle cx="66" cy="54" r="4" fill="#E8E6D8" />
+      <circle cx="34" cy="70" r="4" fill="#E8E6D8" />
+      <circle cx="50" cy="70" r="4" fill="#E8E6D8" />
+      <circle cx="66" cy="70" r="4" fill="#E8E6D8" />
+      <ellipse cx="30" cy="44" rx="6" ry="4" fill="white" opacity="0.6" />
+      <Face cy={86} />
+    </svg>
+  );
+}
+
+function SvgKiwi() {
+  const seeds: [number, number, number][] = [
+    [50, 52, 0],  [61, 56, 30],  [68, 64, 60],  [65, 74, 90],
+    [57, 82, 120],[43, 82, 150], [35, 74, 180], [32, 64, 210], [39, 56, 240],
+  ];
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <Shad />
+      <ellipse cx="50" cy="68" rx="30" ry="36" fill="#8B6C3C" />
+      <ellipse cx="50" cy="68" rx="27" ry="33" fill="#A07840" />
+      <ellipse cx="50" cy="68" rx="23" ry="29" fill="#6CB840" />
+      <ellipse cx="50" cy="68" rx="20" ry="26" fill="#7DCF50" />
+      {seeds.map(([cx, cy, deg], i) => (
+        <ellipse key={i} cx={cx} cy={cy} rx="2" ry="3.5" fill="#3A5C18"
+          transform={`rotate(${deg} ${cx} ${cy})`} />
+      ))}
+      <circle cx="50" cy="68" r="6" fill="#E8F0C0" />
+      <ellipse cx="36" cy="50" rx="5" ry="9" fill="white" opacity="0.25" />
+      <Face cy={64} />
+    </svg>
+  );
+}
+
+// ─── レアキャラ SVG ───────────────────────────────────────────
+
+function SvgGoldenCat() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rc-gold" cx="40%" cy="35%" r="65%">
+          <stop offset="0%"   stopColor="#FFF4A0" />
+          <stop offset="100%" stopColor="#F5A800" />
+        </radialGradient>
+      </defs>
+      <Shad />
+      <polygon points="24,44 20,20 40,36" fill="#F5C000" />
+      <polygon points="76,44 80,20 60,36" fill="#F5C000" />
+      <polygon points="26,42 23,24 38,36" fill="#FFE840" />
+      <polygon points="74,42 77,24 62,36" fill="#FFE840" />
+      <ellipse cx="50" cy="76" rx="28" ry="30" fill="url(#rc-gold)" />
+      <ellipse cx="50" cy="58" rx="28" ry="26" fill="url(#rc-gold)" />
+      <path d="M 78 92 Q 96 82 90 70 Q 86 78 78 88" fill="#F5A800" />
+      <ellipse cx="36" cy="46" rx="5" ry="9" fill="white" opacity="0.4" />
+      <Face cy={56} />
+      <path d="M 30 61 L 14 57" stroke="#C89000" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <path d="M 30 64 L 14 64" stroke="#C89000" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <path d="M 70 61 L 86 57" stroke="#C89000" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <path d="M 70 64 L 86 64" stroke="#C89000" strokeWidth="1.5" opacity="0.7" strokeLinecap="round" />
+      <polygon points="36,38 41,28 50,35 59,28 64,38" fill="#FFD700" stroke="#F5A800" strokeWidth="1" />
+      <circle cx="41" cy="28" r="2.5" fill="#FF5080" />
+      <circle cx="50" cy="25" r="3"   fill="#FF5080" />
+      <circle cx="59" cy="28" r="2.5" fill="#FF5080" />
+    </svg>
+  );
+}
+
+function SvgRainbowFish() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rc-rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#FF6B6B" />
+          <stop offset="25%"  stopColor="#FFD93D" />
+          <stop offset="50%"  stopColor="#6BCB77" />
+          <stop offset="75%"  stopColor="#4D96FF" />
+          <stop offset="100%" stopColor="#C77DFF" />
+        </linearGradient>
+      </defs>
+      <Shad />
+      <path d="M 36 96 Q 20 108 18 114 L 50 110 L 82 114 Q 80 108 64 96 Z" fill="url(#rc-rainbow)" />
+      <path d="M 22 62 Q 12 50 14 40 Q 24 56 28 64 Z" fill="url(#rc-rainbow)" />
+      <path d="M 78 62 Q 88 50 86 40 Q 76 56 72 64 Z" fill="url(#rc-rainbow)" />
+      <path d="M 38 26 Q 50 14 62 26 L 58 36 L 42 36 Z" fill="url(#rc-rainbow)" />
+      <ellipse cx="50" cy="62" rx="28" ry="36" fill="url(#rc-rainbow)" />
+      <ellipse cx="50" cy="70" rx="18" ry="26" fill="rgba(255,255,255,0.25)" />
+      <ellipse cx="36" cy="44" rx="5"  ry="9"  fill="white" opacity="0.35" />
+      <Face cy={62} />
+    </svg>
+  );
+}
+
+function SvgIceCrystalFridge() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rc-ice" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#E0F8FF" />
+          <stop offset="100%" stopColor="#90C8F0" />
+        </linearGradient>
+      </defs>
+      <Shad />
+      <ellipse cx="20" cy="64" rx="8" ry="5" fill="#B8E8FF" transform="rotate(-20 20 64)" />
+      <ellipse cx="80" cy="64" rx="8" ry="5" fill="#B8E8FF" transform="rotate(20 80 64)" />
+      <rect x="22" y="28" width="56" height="78" rx="14" fill="url(#rc-ice)" />
+      <rect x="22" y="28" width="56" height="36" rx="14" fill="rgba(230,248,255,0.9)" />
+      <rect x="64" y="40" width="4" height="12" rx="2" fill="#68A8D8" />
+      <rect x="64" y="78" width="4" height="12" rx="2" fill="#68A8D8" />
+      <rect x="22" y="62" width="56" height="3" rx="1.5" fill="#88C0E8" />
+      <ellipse cx="36" cy="38" rx="5" ry="7" fill="white" opacity="0.6" />
+      <Face cy={72} />
+    </svg>
+  );
+}
+
+function SvgLegendaryEgg() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rc-legend" cx="40%" cy="35%" r="60%">
+          <stop offset="0%"   stopColor="#FFFDE7" />
+          <stop offset="60%"  stopColor="#FFE082" />
+          <stop offset="100%" stopColor="#FFB300" />
+        </radialGradient>
+      </defs>
+      <Shad />
+      <ellipse cx="50" cy="66" rx="28" ry="36" fill="url(#rc-legend)" />
+      <ellipse cx="50" cy="64" rx="26" ry="34" fill="rgba(255,253,231,0.7)" />
+      <ellipse cx="38" cy="44" rx="6"  ry="11" fill="white" opacity="0.7" />
+      <Face cy={66} />
+      <path d="M 50 32 L 46 45 L 53 38 L 48 53"
+            stroke="#FFD700" strokeWidth="2.2" fill="none" opacity="0.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SvgAuroraCarrot() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="rc-aurora" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#FF6B6B" />
+          <stop offset="33%"  stopColor="#FFD93D" />
+          <stop offset="66%"  stopColor="#6BCB77" />
+          <stop offset="100%" stopColor="#4D96FF" />
+        </linearGradient>
+      </defs>
+      <Shad />
+      <path d="M 42 26 Q 34 12 30 6"  stroke="#5CB83A" strokeWidth="4.5" fill="none" strokeLinecap="round" />
+      <path d="M 50 22 Q 50 6  50 0"  stroke="#5CB83A" strokeWidth="4.5" fill="none" strokeLinecap="round" />
+      <path d="M 58 26 Q 66 12 70 6"  stroke="#5CB83A" strokeWidth="4.5" fill="none" strokeLinecap="round" />
+      <ellipse cx="50" cy="28" rx="14" ry="8" fill="#6DC848" />
+      <path d="M 36 28 Q 30 60 50 108 Q 70 60 64 28 Z" fill="url(#rc-aurora)" />
+      <path d="M 38 50 Q 50 46 62 50" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" fill="none" />
+      <path d="M 37 64 Q 50 60 63 64" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" fill="none" />
+      <path d="M 38 78 Q 50 74 62 78" stroke="rgba(255,255,255,0.5)" strokeWidth="1.8" fill="none" />
+      <ellipse cx="40" cy="48" rx="4" ry="12" fill="white" opacity="0.35" />
+      <Face cy={58} />
+    </svg>
+  );
+}
+
+function SvgStarMushroom() {
+  return (
+    <svg viewBox="0 0 100 115" className="w-24 h-28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rc-starcap" cx="50%" cy="40%" r="60%">
+          <stop offset="0%"   stopColor="#FF70A0" />
+          <stop offset="100%" stopColor="#CC0050" />
+        </radialGradient>
+      </defs>
+      <Shad />
+      <rect x="42" y="70" width="16" height="34" rx="7" fill="#D4B896" />
+      <ellipse cx="50" cy="72" rx="12" ry="5"  fill="#C4A880" />
+      <ellipse cx="50" cy="66" rx="36" ry="13" fill="#E8D4B0" />
+      <ellipse cx="50" cy="54" rx="36" ry="22" fill="url(#rc-starcap)" />
+      <ellipse cx="50" cy="50" rx="34" ry="20" fill="#FF60A0" />
+      <circle cx="37" cy="44" r="5.5" fill="white" opacity="0.85" />
+      <circle cx="56" cy="41" r="4.5" fill="white" opacity="0.85" />
+      <circle cx="68" cy="52" r="4"   fill="white" opacity="0.85" />
+      <circle cx="30" cy="54" r="3.5" fill="white" opacity="0.85" />
+      <ellipse cx="34" cy="44" rx="7" ry="10" fill="white" opacity="0.2" />
+      <Face cy={56} />
+    </svg>
+  );
+}
+
+// ─── レア演出レイヤー ─────────────────────────────────────────
+function RareEffectLayer({ effect }: { effect: RareEffect }) {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+      {effect === "glow" && (
+        <div className="rare-glow absolute inset-[-10px] rounded-full"
+             style={{ background: "radial-gradient(circle, rgba(255,215,50,0.38) 0%, transparent 68%)" }} />
+      )}
+      {effect === "cold" && (
+        <>{[0,1,2,3,4].map((i) => (
+          <div key={i} className="rare-cold absolute bottom-2 rounded-full bg-sky-100/70"
+               style={{ width: `${7+i*4}px`, height: `${5+i*2}px`,
+                        left: `${14+i*16}%`, animationDelay: `${i*0.45}s`, filter: "blur(2.5px)" }} />
+        ))}</>
+      )}
+      {effect === "aurora" && (
+        <>{(["rgba(255,100,200,0.35)","rgba(80,200,255,0.30)","rgba(160,255,100,0.28)"] as const).map((color, i) => (
+          <div key={i} className="rare-aurora absolute top-0 h-full w-1/2"
+               style={{ background: `linear-gradient(180deg,transparent,${color},transparent)`,
+                        animationDelay: `${i*1.1}s`, animationDuration: `${3+i*0.9}s` }} />
+        ))}</>
+      )}
+      {effect === "stardust" && (
+        <>{[0,1,2,3,4,5,6,7].map((i) => (
+          <span key={i} className="rare-star absolute select-none text-[9px]"
+                style={{ color: ["#FFD700","#FF69B4","#87CEEB","#98FB98"][i%4],
+                         left: `${8+(i*13)%80}%`, top: `${4+(i*19)%58}%`,
+                         animationDelay: `${i*0.28}s`, animationDuration: `${1.7+(i%3)*0.45}s` }}>
+            ✦
+          </span>
+        ))}</>
+      )}
+    </div>
+  );
+}
+
 // ─── キャラクター定義 ──────────────────────────────────────────
 // getDay(): 0=日, 1=月, 2=火, 3=水, 4=木, 5=金, 6=土
 const DAY_CHARS: CharDef[] = [
@@ -321,36 +675,72 @@ const DAY_CHARS: CharDef[] = [
 ];
 
 const RANDOM_CHARS: CharDef[] = [
-  { name: "にんじん",       anim: "purru", intensity: "mid", Svg: SvgCarrot     },
-  { name: "トマト",         anim: "purru", intensity: "low", Svg: SvgTomato     },
-  { name: "りんご",         anim: "purru", intensity: "low", Svg: SvgApple      },
-  { name: "ねぎ",           anim: "jump",  intensity: "low", Svg: SvgGreenOnion },
-  { name: "しいたけ",       anim: "purru", intensity: "low", Svg: SvgShiitake   },
-  { name: "とうもろこし",   anim: "purru", intensity: "mid", Svg: SvgCorn       },
+  { name: "にんじん",     anim: "purru", intensity: "mid", Svg: SvgCarrot       },
+  { name: "トマト",       anim: "purru", intensity: "low", Svg: SvgTomato       },
+  { name: "りんご",       anim: "purru", intensity: "low", Svg: SvgApple        },
+  { name: "ねぎ",         anim: "jump",  intensity: "low", Svg: SvgGreenOnion   },
+  { name: "しいたけ",     anim: "purru", intensity: "low", Svg: SvgShiitake     },
+  { name: "とうもろこし", anim: "purru", intensity: "mid", Svg: SvgCorn         },
+  { name: "キャベツ",     anim: "purru", intensity: "low", Svg: SvgCabbage      },
+  { name: "バナナ",       anim: "purru", intensity: "mid", Svg: SvgBanana       },
+  { name: "ねこ",         anim: "jump",  intensity: "low", Svg: SvgCat          },
+  { name: "冷蔵庫の精霊", anim: "jump",  intensity: "mid", Svg: SvgFridgeSpirit },
+  { name: "白たまねぎ",   anim: "purru", intensity: "low", Svg: SvgOnionWhite   },
+  { name: "さつまいも",   anim: "purru", intensity: "low", Svg: SvgSweetPotato  },
+  { name: "えび",         anim: "jump",  intensity: "low", Svg: SvgShrimp       },
+  { name: "とうふ",       anim: "purru", intensity: "low", Svg: SvgTofu         },
+  { name: "キウイ",       anim: "purru", intensity: "low", Svg: SvgKiwi         },
+];
+
+const RARE_CHARS: RareCharDef[] = [
+  { name: "黄金猫",           anim: "jump",  intensity: "high", effect: "glow",     Svg: SvgGoldenCat        },
+  { name: "虹色おさかな",     anim: "jump",  intensity: "high", effect: "aurora",   Svg: SvgRainbowFish      },
+  { name: "氷の冷蔵庫の精霊", anim: "jump",  intensity: "high", effect: "cold",     Svg: SvgIceCrystalFridge },
+  { name: "伝説の卵",         anim: "purru", intensity: "high", effect: "glow",     Svg: SvgLegendaryEgg     },
+  { name: "オーロラにんじん", anim: "purru", intensity: "high", effect: "aurora",   Svg: SvgAuroraCarrot     },
+  { name: "星キノコ",         anim: "purru", intensity: "high", effect: "stardust", Svg: SvgStarMushroom     },
 ];
 
 // ─── メインコンポーネント ─────────────────────────────────────
 export default function DailyCharacter() {
-  // サーバー/クライアント初期値を統一（曜日は決定的）
-  const dayChar = useMemo(() => DAY_CHARS[new Date().getDay()], []);
-  const [char, setChar] = useState<CharDef>(dayChar);
+  // SSR-safe: 初期値をブロッコリー固定 → クライアントでのみ曜日+ランダム+レア判定
+  const [char, setChar]             = useState<CharDef>(DAY_CHARS[6]);
+  const [rareEffect, setRareEffect] = useState<RareEffect | null>(null);
+  const [mounted, setMounted]       = useState(false);
 
-  // ハイドレーション後にのみランダム判定（SSR不一致を回避）
   useEffect(() => {
-    if (Math.random() < RANDOM_CHANCE) {
+    const day = new Date().getDay();
+    if (Math.random() < RARE_CHANCE) {
+      const rare = RARE_CHARS[Math.floor(Math.random() * RARE_CHARS.length)];
+      setChar(rare);
+      setRareEffect(rare.effect);
+    } else if (Math.random() < RANDOM_CHANCE) {
       setChar(RANDOM_CHARS[Math.floor(Math.random() * RANDOM_CHARS.length)]);
+    } else {
+      setChar(DAY_CHARS[day]);
     }
+    setMounted(true);
   }, []);
 
   const { Svg, anim, intensity } = char;
 
+  const dropFilter =
+    rareEffect === "glow"   ? "drop-shadow(0 0 14px rgba(255,210,50,0.65)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+    rareEffect === "cold"   ? "drop-shadow(0 0 12px rgba(140,210,255,0.70)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+    rareEffect === "aurora" ? "drop-shadow(0 0 12px rgba(180,100,255,0.55)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+                              "drop-shadow(0 6px 14px rgba(0,0,0,0.10)) drop-shadow(0 2px 4px rgba(0,0,0,0.06))";
+
   return (
     <div className="flex justify-center mb-3">
-      <div
-        className={ANIM_CLASS[anim][intensity]}
-        style={{ transformOrigin: "50% 100%" }}
-      >
-        <Svg />
+      {/* SSR: opacity-0 で初期描画 → hydration 完了後 useEffect で char-pop アニメーション付きで出現 */}
+      <div className={`relative ${mounted ? "char-pop" : "opacity-0"}`}>
+        {rareEffect && <RareEffectLayer effect={rareEffect} />}
+        <div
+          className={ANIM_CLASS[anim][intensity]}
+          style={{ transformOrigin: "50% 100%", filter: dropFilter }}
+        >
+          <Svg />
+        </div>
       </div>
     </div>
   );
