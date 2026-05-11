@@ -15,9 +15,9 @@ import RamenRemakeCard from "@/components/RamenRemakeCard";
 import { useT, useLang } from "@/lib/LangContext";
 import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
-import { rt, getFallbackRecipes, translateRecipe } from "@/utils/recipe_translations";
+import { rt, getFallbackRecipes } from "@/utils/recipe_translations";
 import {
-  getPoints, addPoints, checkInToday, markCooked,
+  getPoints, addPoints, checkInToday,
   getLevel, getNextLevelPts, POINTS, type PointsState,
 } from "@/lib/points";
 import nextDynamic from "next/dynamic";
@@ -104,8 +104,6 @@ export default function Home() {
   const cameraRef        = useRef<HTMLInputElement>(null);
   const lastGenParams    = useRef<{ priority: string[]; all: string[] } | null>(null);
 
-  const urgentItems  = priorityItems.filter((i) => i.expiryDays <= 2);
-  const warningItems = priorityItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 5);
   const today = new Date().toLocaleDateString(t.locale, { month: "long", day: "numeric", weekday: "short" });
 
   // 冷蔵庫スコア計算
@@ -410,37 +408,6 @@ export default function Home() {
                 {t.homeSavingsDesc(savingsCount)}
               </p>
             )}
-          </div>
-        )}
-      </div>
-
-      {/* ── たすけて〜カード ── */}
-      <div className="px-4 -mt-5 space-y-2">
-        {urgentItems.length > 0 && (
-          <button
-            onClick={() => handleGenerate()}
-            disabled={loadingRecipes}
-            className="w-full bg-white rounded-2xl px-4 py-4 card-shadow-md animate-slide-up
-                       border-2 border-red-100 text-left active:scale-98 transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl shrink-0 animate-puru-puru inline-block">🥺</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-black text-red-500 text-base truncate">
-                  {urgentItems.map((i) => i.name).slice(0, 3).join(t.nameSep)}
-                  　{t.homeUrgentLabel}
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">{t.homeUrgentTap}</p>
-              </div>
-            </div>
-          </button>
-        )}
-        {warningItems.length > 0 && urgentItems.length === 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 animate-slide-up flex items-center gap-3">
-            <span className="text-2xl shrink-0 animate-yura-yura inline-block">🥕</span>
-            <p className="text-amber-700 font-semibold text-sm">
-              {t.homeWarning(warningItems.map((i) => i.name).slice(0, 3).join(t.nameSep))}
-            </p>
           </div>
         )}
       </div>

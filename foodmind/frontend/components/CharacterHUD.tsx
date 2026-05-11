@@ -32,13 +32,13 @@ interface Props {
 }
 
 export default function CharacterHUD({ items, fridgeScore }: Props) {
-  const { mood, emoji, message, level, xpPercent } = useCharacterGame(items, fridgeScore);
+  const { mood, emoji, moodEmoji, message, level, xpPercent } =
+    useCharacterGame(items, fridgeScore);
 
   const [bubbleOn, setBubbleOn] = useState(true);
   const [levelUp, setLevelUp]   = useState(false);
   const prevLevelRef            = useRef(level);
 
-  // Level-up notification
   useEffect(() => {
     if (level > prevLevelRef.current) {
       setLevelUp(true);
@@ -49,7 +49,6 @@ export default function CharacterHUD({ items, fridgeScore }: Props) {
     prevLevelRef.current = level;
   }, [level]);
 
-  // Auto-hide bubble after 8s; re-show when message changes
   useEffect(() => {
     setBubbleOn(true);
     const t = setTimeout(() => setBubbleOn(false), 8000);
@@ -57,92 +56,123 @@ export default function CharacterHUD({ items, fridgeScore }: Props) {
   }, [message]);
 
   return (
-    <div className="fixed bottom-24 right-3 z-[9999] flex flex-col items-end gap-2 pointer-events-none select-none">
-
-      {/* ── レベルアップ演出 ── */}
-      <AnimatePresence>
-        {levelUp && (
-          <motion.div
-            key="levelup"
-            initial={{ opacity: 0, scale: 0.7, y: 8 }}
-            animate={{ opacity: 1, scale: 1,   y: 0 }}
-            exit={{    opacity: 0,              y: -14 }}
-            transition={{ duration: 0.35 }}
-            className="bg-yellow-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md"
-          >
-            ✨ Lv.{level} にレベルアップ！
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── 吹き出し ── */}
-      <AnimatePresence mode="wait">
-        {bubbleOn && (
-          <motion.button
-            key={message}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0  }}
-            exit={{    opacity: 0, y: -6  }}
-            transition={{ duration: 0.3 }}
-            onClick={() => setBubbleOn(false)}
-            className={`
-              pointer-events-auto text-left
-              relative max-w-[172px] px-3 py-2
-              rounded-2xl border shadow-md text-xs font-medium leading-snug
-              ${MOOD_BUBBLE[mood]}
-            `}
-          >
-            {message}
-            {/* 吹き出しのしっぽ */}
-            <span
-              aria-hidden
-              className="absolute -bottom-[7px] right-5 block w-[13px] h-[13px] rotate-45 border-r border-b"
-              style={{ background: "inherit", borderColor: "inherit" }}
-            />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      {/* ── キャラ本体 ── */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1   }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        onClick={() => setBubbleOn((v) => !v)}
-        className="pointer-events-auto focus:outline-none"
-        aria-label="キャラクターメッセージを表示"
+    <>
+      {/* ── 背景ゴースト（半透明・背景層） ── */}
+      <div
+        className="fixed inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
+        style={{ zIndex: 0 }}
+        aria-hidden
       >
-        <motion.div
+        <motion.span
+          key={emoji}
+          initial={{ opacity: 0, scale: 0.8 }}
           animate={
             mood === "warning"
-              ? { x: [0, -2, 2, -2, 2, 0] }
-              : { x: 0 }
+              ? { opacity: [0.08, 0.13, 0.08], scale: 1 }
+              : { opacity: 0.09, scale: 1 }
           }
           transition={
             mood === "warning"
-              ? { repeat: Infinity, duration: 0.55, repeatDelay: 2.5, ease: "easeInOut" }
-              : { duration: 0.2 }
+              ? { repeat: Infinity, duration: 2.5, ease: "easeInOut" }
+              : { duration: 1.2 }
           }
-          className={`
-            w-16 h-16 rounded-full bg-white
-            flex flex-col items-center justify-center
-            shadow-lg ring-2 ${MOOD_RING[mood]}
-          `}
+          style={{ fontSize: "65vw", lineHeight: 1 }}
         >
-          <span className="text-3xl leading-none">{emoji}</span>
-          <span className="text-[9px] text-gray-400 font-bold mt-0.5">Lv.{level}</span>
-        </motion.div>
-      </motion.button>
-
-      {/* ── XP バー ── */}
-      <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${MOOD_XP[mood]}`}
-          animate={{ width: `${xpPercent}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        />
+          {emoji}
+        </motion.span>
       </div>
 
-    </div>
+      {/* ── キャラHUD本体（fixed 右下） ── */}
+      <div className="fixed bottom-24 right-3 z-[9999] flex flex-col items-end gap-2 pointer-events-none select-none">
+
+        {/* レベルアップ演出 */}
+        <AnimatePresence>
+          {levelUp && (
+            <motion.div
+              key="levelup"
+              initial={{ opacity: 0, scale: 0.7, y: 8 }}
+              animate={{ opacity: 1, scale: 1,   y: 0 }}
+              exit={{    opacity: 0,              y: -14 }}
+              transition={{ duration: 0.35 }}
+              className="bg-yellow-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md"
+            >
+              ✨ Lv.{level} にレベルアップ！
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 吹き出し */}
+        <AnimatePresence mode="wait">
+          {bubbleOn && (
+            <motion.button
+              key={message}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0  }}
+              exit={{    opacity: 0, y: -6  }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setBubbleOn(false)}
+              className={`
+                pointer-events-auto text-left
+                relative max-w-[200px] px-3.5 py-2.5
+                rounded-2xl border shadow-md text-xs font-medium leading-snug
+                ${MOOD_BUBBLE[mood]}
+              `}
+            >
+              {message}
+              <span
+                aria-hidden
+                className="absolute -bottom-[7px] right-6 block w-[13px] h-[13px] rotate-45 border-r border-b"
+                style={{ background: "inherit", borderColor: "inherit" }}
+              />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* キャラ本体（w-28 h-28） */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1   }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          onClick={() => setBubbleOn((v) => !v)}
+          className="pointer-events-auto focus:outline-none"
+          aria-label="キャラクターメッセージを表示"
+        >
+          <motion.div
+            animate={
+              mood === "warning"
+                ? { x: [0, -3, 3, -3, 3, 0] }
+                : { x: 0 }
+            }
+            transition={
+              mood === "warning"
+                ? { repeat: Infinity, duration: 0.55, repeatDelay: 2.5, ease: "easeInOut" }
+                : { duration: 0.2 }
+            }
+            className={`
+              w-28 h-28 rounded-full bg-white
+              flex flex-col items-center justify-center
+              shadow-xl ring-4 ${MOOD_RING[mood]}
+            `}
+          >
+            <span className="text-5xl leading-none">{emoji}</span>
+            {/* 食材絵文字表示中はムード絵文字を小さく補足表示 */}
+            {emoji !== moodEmoji && (
+              <span className="text-lg leading-none mt-0.5">{moodEmoji}</span>
+            )}
+            <span className="text-[10px] text-gray-400 font-bold mt-1">Lv.{level}</span>
+          </motion.div>
+        </motion.button>
+
+        {/* XP バー（w-28 でキャラと幅合わせ） */}
+        <div className="w-28 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${MOOD_XP[mood]}`}
+            animate={{ width: `${xpPercent}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        </div>
+
+      </div>
+    </>
   );
 }

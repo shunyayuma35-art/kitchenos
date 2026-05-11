@@ -15,6 +15,7 @@ interface GameState {
 export interface CharacterGameReturn {
   mood:      "happy" | "warning" | "sad" | "neutral";
   emoji:     string;
+  moodEmoji: string;
   message:   string;
   level:     number;
   xp:        number;
@@ -72,6 +73,7 @@ export function useCharacterGame(
   return {
     mood:      charState.mood,
     emoji:     charState.emoji,
+    moodEmoji: charState.moodEmoji,
     message:   charState.messages[msgIdx % charState.messages.length],
     level:     gameState.level,
     xp:        gameState.xp,
