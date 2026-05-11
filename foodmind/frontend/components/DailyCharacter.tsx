@@ -819,46 +819,50 @@ const RARE_CHARS: RareCharDef[] = [
   { name: "プリズム玉ねぎ",   anim: "purru", intensity: "high", effect: "aurora",   Svg: SvgPrismOnion       },
 ];
 
-// ─── メインコンポーネント ─────────────────────────────────────
+// ─── ① キャラ生成ロジック（pure function）────────────────────
+function generateCharacter(): { char: CharDef; effect: RareEffect | null } {
+  const day  = new Date().getDay();
+  const base = DAY_CHARS[day];
+
+  if (Math.random() < RARE_CHANCE) {
+    const rare = RARE_CHARS[Math.floor(Math.random() * RARE_CHARS.length)];
+    return { char: rare, effect: rare.effect };
+  }
+
+  if (Math.random() < RANDOM_CHANCE) {
+    return { char: RANDOM_CHARS[Math.floor(Math.random() * RANDOM_CHARS.length)], effect: null };
+  }
+
+  return { char: base, effect: null };
+}
+
+// ─── ② コンポーネント ────────────────────────────────────────
 export default function DailyCharacter() {
-  const [char, setChar]             = useState<CharDef | null>(null);
-  const [rareEffect, setRareEffect] = useState<RareEffect | null>(null);
+  const [char,   setChar]   = useState<CharDef | null>(null);
+  const [effect, setEffect] = useState<RareEffect | null>(null);
 
   useEffect(() => {
-    const day        = new Date().getDay();
-    const baseChar   = DAY_CHARS[day];
-    const rareRoll   = Math.random();
-    const randomRoll = Math.random();
-    const isRare     = rareRoll   < RARE_CHANCE;
-    const isRandom   = randomRoll < RANDOM_CHANCE;
-
-    if (isRare) {
-      const rare = RARE_CHARS[Math.floor(Math.random() * RARE_CHARS.length)];
-      setChar(rare);
-      setRareEffect(rare.effect);
-    } else if (isRandom) {
-      setChar(RANDOM_CHARS[Math.floor(Math.random() * RANDOM_CHARS.length)]);
-    } else {
-      setChar(baseChar);
-    }
+    const result = generateCharacter();
+    setChar(result.char);
+    setEffect(result.effect);
   }, []);
 
-  if (!char) {
-    return <div className="flex justify-center mb-3" style={{ minHeight: "7rem" }} />;
-  }
+  // ─── ③ レンダー ──────────────────────────────────────────
+  if (!char) return null;
 
   const { Svg, anim, intensity } = char;
 
   const dropFilter =
-    rareEffect === "glow"   ? "drop-shadow(0 0 14px rgba(255,210,50,0.65)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
-    rareEffect === "cold"   ? "drop-shadow(0 0 12px rgba(140,210,255,0.70)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
-    rareEffect === "aurora" ? "drop-shadow(0 0 12px rgba(180,100,255,0.55)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
-                              "drop-shadow(0 6px 14px rgba(0,0,0,0.10)) drop-shadow(0 2px 4px rgba(0,0,0,0.06))";
+    effect === "glow"     ? "drop-shadow(0 0 14px rgba(255,210,50,0.65)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+    effect === "cold"     ? "drop-shadow(0 0 12px rgba(140,210,255,0.70)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+    effect === "aurora"   ? "drop-shadow(0 0 12px rgba(180,100,255,0.55)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+    effect === "stardust" ? "drop-shadow(0 0 10px rgba(255,180,255,0.60)) drop-shadow(0 4px 8px rgba(0,0,0,0.10))" :
+                            "drop-shadow(0 6px 14px rgba(0,0,0,0.10)) drop-shadow(0 2px 4px rgba(0,0,0,0.06))";
 
   return (
     <div className="flex justify-center mb-3">
       <div className="relative char-pop">
-        {rareEffect && <RareEffectLayer effect={rareEffect} />}
+        {effect && <RareEffectLayer effect={effect} />}
         <div
           className={ANIM_CLASS[anim][intensity]}
           style={{ transformOrigin: "50% 100%", filter: dropFilter }}
