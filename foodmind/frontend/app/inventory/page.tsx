@@ -13,6 +13,10 @@ const DailyCharacter = nextDynamic(
   () => import("@/components/DailyCharacter"),
   { ssr: false }
 );
+const CharacterOverlay = nextDynamic(
+  () => import("@/components/CharacterOverlay"),
+  { ssr: false }
+);
 
 type Tab = Category | "all";
 
@@ -43,6 +47,15 @@ export default function InventoryPage() {
     { label: t.catVegetable, value: "vegetable", icon: "🥬" },
     { label: t.catPantry,    value: "pantry",    icon: "📦" },
   ];
+
+  const overlayItems = [...items]
+    .filter((i) => i.expiryDays <= 7)
+    .sort((a, b) => a.expiryDays - b.expiryDays);
+  const invFridgeScore = Math.max(0, Math.min(100,
+    100
+    - items.filter((i) => i.expiryDays <= 2).length * 20
+    - items.filter((i) => i.expiryDays > 2 && i.expiryDays <= 7).length * 8
+  ));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,6 +169,11 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      <CharacterOverlay
+        urgentItems={overlayItems}
+        fridgeScore={invFridgeScore}
+        allCount={items.length}
+      />
       <BottomNav />
     </div>
   );

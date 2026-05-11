@@ -28,6 +28,10 @@ const DailyCharacter = nextDynamic(
   () => import("@/components/DailyCharacter"),
   { ssr: false }
 );
+const CharacterOverlay = nextDynamic(
+  () => import("@/components/CharacterOverlay"),
+  { ssr: false }
+);
 
 // ② 画像リサイズ（最大1024px・JPEG変換）—— vision送信前処理
 async function resizeImage(
@@ -606,6 +610,11 @@ export default function Home() {
         </section>
       </div>
 
+      <CharacterOverlay
+        urgentItems={[...urgentItems, ...warningItems].sort((a, b) => a.expiryDays - b.expiryDays)}
+        fridgeScore={fridgeScore}
+        allCount={allItems.length}
+      />
       <BottomNav />
 
       {/* ── 食材変更モーダル ── */}
