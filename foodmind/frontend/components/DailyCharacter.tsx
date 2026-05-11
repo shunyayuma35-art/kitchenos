@@ -821,10 +821,8 @@ const RARE_CHARS: RareCharDef[] = [
 
 // ─── メインコンポーネント ─────────────────────────────────────
 export default function DailyCharacter() {
-  // SSR-safe: 初期値をブロッコリー固定 → クライアントでのみ曜日+ランダム+レア判定
-  const [char, setChar]             = useState<CharDef>(DAY_CHARS[6]);
+  const [char, setChar]             = useState<CharDef | null>(null);
   const [rareEffect, setRareEffect] = useState<RareEffect | null>(null);
-  const [mounted, setMounted]       = useState(false);
 
   useEffect(() => {
     const day = new Date().getDay();
@@ -837,8 +835,11 @@ export default function DailyCharacter() {
     } else {
       setChar(DAY_CHARS[day]);
     }
-    setMounted(true);
   }, []);
+
+  if (!char) {
+    return <div className="flex justify-center mb-3" style={{ minHeight: "7rem" }} />;
+  }
 
   const { Svg, anim, intensity } = char;
 
@@ -850,8 +851,7 @@ export default function DailyCharacter() {
 
   return (
     <div className="flex justify-center mb-3">
-      {/* SSR: opacity-0 で初期描画 → hydration 完了後 useEffect で char-pop アニメーション付きで出現 */}
-      <div className={`relative ${mounted ? "char-pop" : "opacity-0"}`}>
+      <div className="relative char-pop">
         {rareEffect && <RareEffectLayer effect={rareEffect} />}
         <div
           className={ANIM_CLASS[anim][intensity]}
