@@ -825,15 +825,21 @@ export default function DailyCharacter() {
   const [rareEffect, setRareEffect] = useState<RareEffect | null>(null);
 
   useEffect(() => {
-    const day = new Date().getDay();
-    if (Math.random() < RARE_CHANCE) {
+    const day        = new Date().getDay();
+    const baseChar   = DAY_CHARS[day];
+    const rareRoll   = Math.random();
+    const randomRoll = Math.random();
+    const isRare     = rareRoll   < RARE_CHANCE;
+    const isRandom   = randomRoll < RANDOM_CHANCE;
+
+    if (isRare) {
       const rare = RARE_CHARS[Math.floor(Math.random() * RARE_CHARS.length)];
       setChar(rare);
       setRareEffect(rare.effect);
-    } else if (Math.random() < RANDOM_CHANCE) {
+    } else if (isRandom) {
       setChar(RANDOM_CHARS[Math.floor(Math.random() * RANDOM_CHARS.length)]);
     } else {
-      setChar(DAY_CHARS[day]);
+      setChar(baseChar);
     }
   }, []);
 

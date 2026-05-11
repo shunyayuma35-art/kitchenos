@@ -12,8 +12,6 @@ import FoodCard from "@/components/FoodCard";
 import RecipeCard from "@/components/RecipeCard";
 import RemakeCard from "@/components/RemakeCard";
 import RamenRemakeCard from "@/components/RamenRemakeCard";
-import dynamic from "next/dynamic";
-const DailyCharacter = dynamic(() => import("@/components/DailyCharacter"), { ssr: false });
 import { useT, useLang } from "@/lib/LangContext";
 import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
@@ -22,6 +20,12 @@ import {
   getPoints, addPoints, checkInToday, markCooked,
   getLevel, getNextLevelPts, POINTS, type PointsState,
 } from "@/lib/points";
+import dynamic from "next/dynamic";
+
+const DailyCharacter = dynamic(
+  () => import("@/components/DailyCharacter"),
+  { ssr: false }
+);
 
 // ② 画像リサイズ（最大1024px・JPEG変換）—— vision送信前処理
 async function resizeImage(
