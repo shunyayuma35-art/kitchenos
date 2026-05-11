@@ -24,12 +24,8 @@ import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 
-const DailyCharacter = nextDynamic(
-  () => import("@/components/DailyCharacter"),
-  { ssr: false }
-);
-const CharacterOverlay = nextDynamic(
-  () => import("@/components/CharacterOverlay"),
+const CharacterHUD = nextDynamic(
+  () => import("@/components/CharacterHUD"),
   { ssr: false }
 );
 
@@ -465,7 +461,6 @@ export default function Home() {
             </div>
           ) : priorityItems.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center card-shadow">
-              <DailyCharacter />
               <p className="text-gray-500 text-base font-semibold">{t.homeEmptyTitle}</p>
               <p className="text-gray-400 text-sm mt-1">{t.homeEmptyHint}</p>
             </div>
@@ -610,10 +605,9 @@ export default function Home() {
         </section>
       </div>
 
-      <CharacterOverlay
-        urgentItems={[...urgentItems, ...warningItems].sort((a, b) => a.expiryDays - b.expiryDays)}
+      <CharacterHUD
+        items={allItems.map((i) => ({ name: i.name, daysLeft: i.expiryDays }))}
         fridgeScore={fridgeScore}
-        allCount={allItems.length}
       />
       <BottomNav />
 

@@ -9,12 +9,8 @@ import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 
-const DailyCharacter = nextDynamic(
-  () => import("@/components/DailyCharacter"),
-  { ssr: false }
-);
-const CharacterOverlay = nextDynamic(
-  () => import("@/components/CharacterOverlay"),
+const CharacterHUD = nextDynamic(
+  () => import("@/components/CharacterHUD"),
   { ssr: false }
 );
 
@@ -48,10 +44,7 @@ export default function InventoryPage() {
     { label: t.catPantry,    value: "pantry",    icon: "📦" },
   ];
 
-  const overlayItems = [...items]
-    .filter((i) => i.expiryDays <= 7)
-    .sort((a, b) => a.expiryDays - b.expiryDays);
-  const invFridgeScore = Math.max(0, Math.min(100,
+  const fridgeScore = Math.max(0, Math.min(100,
     100
     - items.filter((i) => i.expiryDays <= 2).length * 20
     - items.filter((i) => i.expiryDays > 2 && i.expiryDays <= 7).length * 8
@@ -115,7 +108,6 @@ export default function InventoryPage() {
             ))
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center card-shadow">
-              <DailyCharacter />
               <p className="text-gray-400 text-base">{t.invEmpty}</p>
             </div>
           ) : (
@@ -169,10 +161,9 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      <CharacterOverlay
-        urgentItems={overlayItems}
-        fridgeScore={invFridgeScore}
-        allCount={items.length}
+      <CharacterHUD
+        items={items.map((i) => ({ name: i.name, daysLeft: i.expiryDays }))}
+        fridgeScore={fridgeScore}
       />
       <BottomNav />
     </div>
