@@ -5,9 +5,11 @@ import { fetchItems, consumeItem, deleteItem } from "@/lib/api";
 import type { FoodItem, Category } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import { useT } from "@/lib/LangContext";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
-const DailyCharacter = dynamic(
+export const dynamic = "force-dynamic";
+
+const DailyCharacter = nextDynamic(
   () => import("@/components/DailyCharacter"),
   { ssr: false }
 );

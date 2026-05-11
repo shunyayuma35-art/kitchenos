@@ -20,9 +20,11 @@ import {
   getPoints, addPoints, checkInToday, markCooked,
   getLevel, getNextLevelPts, POINTS, type PointsState,
 } from "@/lib/points";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
-const DailyCharacter = dynamic(
+export const dynamic = "force-dynamic";
+
+const DailyCharacter = nextDynamic(
   () => import("@/components/DailyCharacter"),
   { ssr: false }
 );
