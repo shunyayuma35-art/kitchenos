@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { fetchItems, consumeItem, deleteItem } from "@/lib/api";
 import type { FoodItem, Category } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
-import DailyCharacter from "@/components/DailyCharacter";
+import dynamic from "next/dynamic";
+const DailyCharacter = dynamic(() => import("@/components/DailyCharacter"), { ssr: false });
 import { useT } from "@/lib/LangContext";
 
 type Tab = Category | "all";
