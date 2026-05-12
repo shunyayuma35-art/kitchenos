@@ -16,10 +16,7 @@ import { useT, useLang } from "@/lib/LangContext";
 import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
 import { rt, getFallbackRecipes } from "@/utils/recipe_translations";
-import {
-  getPoints, addPoints, checkInToday,
-  getLevel, getNextLevelPts, POINTS, type PointsState,
-} from "@/lib/points";
+import Link from "next/link";
 import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +26,6 @@ const CharacterHUD = nextDynamic(
   { ssr: false }
 );
 
-// ② 画像リサイズ（最大1024px・JPEG変換）—— vision送信前処理
 async function resizeImage(
   file: File,
   maxWidth = 1024,
@@ -57,7 +53,6 @@ async function resizeImage(
   });
 }
 
-// ルールベース「あと1品」提案（AI不使用・超軽量）
 function suggestSideDish(ingredients: string[], lang: Lang): string {
   const s = ingredients.join(" ");
   if (!/(米|麺|パン)/.test(s))                                                                   return rt("side_dish.carb",    lang);
@@ -90,38 +85,21 @@ export default function Home() {
   const [loadingRecipes, setLoadingRecipes] = useState(false);
   const [demoLoading, setDemoLoading]     = useState(false);
   const [error, setError]                 = useState("");
+  const [servings, setServings]           = useState(1);
+  const [editingItem, setEditingItem]     = useState<FoodItem | null>(null);
+  const [editQty, setEditQty]             = useState(1);
+  const [editDays, setEditDays]           = useState(3);
+  const [photoLoading, setPhotoLoading]   = useState(false);
+  const [photoCount, setPhotoCount]       = useState(0);
+  const [langOpen, setLangOpen]           = useState(false);
+  const cameraRef     = useRef<HTMLInputElement>(null);
+  const lastGenParams = useRef<{ priority: string[]; all: string[] } | null>(null);
 
-  const [pts, setPts]                   = useState<PointsState>(() =>
-    typeof window !== "undefined" ? getPoints() : { total: 0, streakDays: 0, lastVisitDate: "", cookedToday: [] }
-  );
-  const [servings, setServings]         = useState(1);
-  const [editingItem, setEditingItem]   = useState<FoodItem | null>(null);
-  const [editQty, setEditQty]           = useState(1);
-  const [editDays, setEditDays]         = useState(3);
-  const [photoLoading, setPhotoLoading] = useState(false);
-  const [photoCount, setPhotoCount]     = useState(0);
-  const [langOpen, setLangOpen]         = useState(false);
-  const cameraRef        = useRef<HTMLInputElement>(null);
-  const lastGenParams    = useRef<{ priority: string[]; all: string[] } | null>(null);
-
-  const today = new Date().toLocaleDateString(t.locale, { month: "long", day: "numeric", weekday: "short" });
-
-  // 冷蔵庫スコア計算
   const fridgeScore = Math.max(0, Math.min(100,
     100
     - allItems.filter((i) => i.expiryDays <= 2).length * 20
     - allItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 7).length * 8
   ));
-  const scoreMeta = fridgeScore >= 85
-    ? { label: "いい感じ！", color: "text-emerald-300" }
-    : fridgeScore >= 65
-      ? { label: "まあまあ", color: "text-yellow-200" }
-      : fridgeScore >= 45
-        ? { label: "使っちゃおう", color: "text-orange-200" }
-        : { label: "たすけて〜", color: "text-red-200" };
-
-  // 今日助けられる食材（1〜3日以内）
-  const savingsCount = allItems.filter((i) => i.expiryDays >= 1 && i.expiryDays <= 3).length;
 
   const loadData = useCallback(async () => {
     try {
@@ -136,57 +114,23 @@ export default function Home() {
   useEffect(() => {
     loadData().finally(() => setLoading(false));
     setPhotoCount(getFridgePhotoCount());
-    // チェックイン（初回ログイン時のみポイント加算）
-    const { state } = checkInToday();
-    setPts(state);
   }, [loadData]);
 
-  // 料理完了ハンドラ — 食材消費 + ポイント + スコア再計算
   async function handleCooked(recipe: Recipe) {
-    // 1. ポイントはRecipeCard側のmarkCookedで加算済み → stateだけ同期
-    setPts(getPoints());
-
-    // 2. レシピ食材と在庫を名前で照合して消費
     const toConsume = recipe.ingredients
       .map((ing) => allItems.find((item) => ing.includes(item.name)))
       .filter((item): item is FoodItem => item !== undefined);
-
-    // 3. 期限2日以内の食材を消費したらボーナスP
-    const urgentConsumed = toConsume.filter((i) => i.expiryDays <= 2);
-    if (urgentConsumed.length > 0) {
-      addPoints(POINTS.EXPIRE_SAVE * urgentConsumed.length);
-      setPts(getPoints());
-    }
-
     await Promise.all(toConsume.map((item) =>
       consumeItem({ foodId: item.id, amount: 1 })
     ));
-
-    // 4. 冷蔵庫データを再取得してスコアを更新
     await loadData();
-
-    // 5. スコア90点ボーナス判定（loadData後に fridgeScore が変わるので useEffect 経由でなく直接判定）
-    const freshItems = await fetchItems();
-    const newScore = Math.max(0, Math.min(100,
-      100
-      - freshItems.filter((i) => i.expiryDays <= 2).length * 20
-      - freshItems.filter((i) => i.expiryDays > 2 && i.expiryDays <= 7).length * 8
-    ));
-    if (newScore >= 90) {
-      addPoints(POINTS.SCORE_90);
-      setPts(getPoints());
-    }
   }
 
-  // 言語切り替え：UIを即時更新し、レシピがある場合は同じ食材で再生成
-  // lastGenParams がなければ現在の優先食材リストで代替
   function handleLangChange(newLang: Lang) {
     setLang(newLang);
-
     const priority = lastGenParams.current?.priority
       ?? (priorityItems.length > 0 ? priorityItems.map((i) => i.name) : null);
     if (!priority || priority.length === 0) return;
-
     const all = lastGenParams.current?.all ?? allItems.map((i) => i.name);
     const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
     setLoadingRecipes(true);
@@ -197,17 +141,17 @@ export default function Home() {
   }
 
   const handleGenerate = useCallback(async (items?: FoodItem[], all?: FoodItem[]) => {
-    const pri = items ?? priorityItems;
-    const allI = all ?? allItems;
+    const pri  = items ?? priorityItems;
+    const allI = all   ?? allItems;
     if (pri.length === 0) return;
     setLoadingRecipes(true);
     setError("");
     try {
-      const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
-      const photoItems = getFridgePhotoItems();
+      const excluded     = getAllergenNamesFromKeys(loadExcludedAllergens());
+      const photoItems   = getFridgePhotoItems();
       const priorityNames = Array.from(new Set([...pri.map((i) => i.name), ...photoItems]));
-      const allNames = Array.from(new Set([...allI.map((i) => i.name), ...photoItems]));
-      const { recipes } = await generateRecipes(priorityNames, allNames, excluded, lang);
+      const allNames      = Array.from(new Set([...allI.map((i) => i.name), ...photoItems]));
+      const { recipes }  = await generateRecipes(priorityNames, allNames, excluded, lang);
       lastGenParams.current = { priority: priorityNames, all: allNames };
       setRecipes(recipes);
     } catch {
@@ -227,10 +171,10 @@ export default function Home() {
       setPriorityItems(d.priorityItems);
       setAllItems(items);
       setLoadingRecipes(true);
-      const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
+      const excluded      = getAllergenNamesFromKeys(loadExcludedAllergens());
       const priorityNames = d.priorityItems.map((i) => i.name);
-      const allNames = items.map((i) => i.name);
-      const { recipes } = await generateRecipes(priorityNames, allNames, excluded, lang);
+      const allNames      = items.map((i) => i.name);
+      const { recipes }   = await generateRecipes(priorityNames, allNames, excluded, lang);
       lastGenParams.current = { priority: priorityNames, all: allNames };
       setRecipes(recipes);
     } catch {
@@ -266,17 +210,14 @@ export default function Home() {
   }
 
   async function handlePhotoRecipe(e: React.ChangeEvent<HTMLInputElement>) {
-    // ① 複数ファイル対応・空ファイル除外
     const files = Array.from(e.target.files || []).filter((f) => f.size > 0);
     if (files.length === 0) {
       setError("画像ファイルが空です。もう一度撮影してください。");
       return;
     }
-
     setPhotoLoading(true);
     setError("");
     try {
-      // ① 全画像を並列処理（Promise.allSettled → 1枚失敗しても継続）
       const results = await Promise.allSettled(
         files.map(async (file) => {
           const { base64, mediaType } = await resizeImage(file);
@@ -285,34 +226,30 @@ export default function Home() {
           return result.items;
         })
       );
-
       setPhotoCount(getFridgePhotoCount());
 
-      // ② fulfilled のみ取り出し → フラット化 → 重複削除
       const allIdentified = results
         .filter((r): r is PromiseFulfilledResult<IdentifiedItem[]> => r.status === "fulfilled")
         .flatMap((r) => r.value);
       const names = Array.from(new Set(allIdentified.map((i) => i.name)));
 
-      // ③ フォールバック：写真識別0件 → 在庫食材 → 最低限
-      const existingItems = allItems.map((i) => i.name);
-      const priorityNames =
+      const existingItems  = allItems.map((i) => i.name);
+      const priorityNames  =
         names.length > 0         ? names :
         existingItems.length > 0 ? existingItems :
         ["卵", "ご飯"];
 
-      // ⑤⑥ generateRecipes を個別 try/catch で囲む → 失敗でも必ずレシピ表示
       const excluded = getAllergenNamesFromKeys(loadExcludedAllergens());
       const combined = Array.from(new Set([...priorityNames, ...existingItems]));
-      let recipes: Recipe[];
+      let generatedRecipes: Recipe[];
       try {
         const result = await generateRecipes(priorityNames, combined, excluded, lang);
         lastGenParams.current = { priority: priorityNames, all: combined };
-        recipes = result.recipes;
+        generatedRecipes = result.recipes;
       } catch {
-        recipes = getFallbackRecipes(lang);
+        generatedRecipes = getFallbackRecipes(lang);
       }
-      setRecipes(recipes);
+      setRecipes(generatedRecipes);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(`写真エラー: ${msg}`);
@@ -322,53 +259,27 @@ export default function Home() {
     }
   }
 
-  const isEmpty = !loading && allItems.length === 0;
-  const sideDish = suggestSideDish(recipes.flatMap((r) => r.ingredients), lang);
+  const isEmpty   = !loading && allItems.length === 0;
+  const sideDish  = suggestSideDish(recipes.flatMap((r) => r.ingredients), lang);
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gray-50 pb-28">
-      {/* 言語ドロップダウン外クリック閉じ */}
       {langOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
       )}
+
       {/* ── ヘッダー ── */}
-      <div className="gradient-header px-5 pt-12 pb-10">
-        <div className="flex items-start justify-between">
+      <div className="gradient-header px-5 pt-12 pb-8">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-white/60 text-xs uppercase tracking-widest mb-1">{t.homeSubtitle}</p>
-            <h1 className="text-white text-2xl font-bold tracking-tight">食材を入れる</h1>
-            <p className="text-white/50 text-xs mt-0.5">冷蔵庫に登録</p>
-            <p className="text-white/60 text-xs mt-2" suppressHydrationWarning>{today}</p>
-            {/* ポイント・レベル表示 */}
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1 bg-white/20 rounded-xl px-3 py-1">
-                <span className="text-amber-300 text-sm">⭐</span>
-                <span className="text-white font-black text-sm">{pts.total}P</span>
-                <span className="text-white/50 text-[10px] ml-0.5">Lv{getLevel(pts.total)}</span>
-              </div>
-              {pts.streakDays >= 2 && (
-                <div className="flex items-center gap-1 bg-white/20 rounded-xl px-2.5 py-1">
-                  <span className="text-orange-300 text-sm">🔥</span>
-                  <span className="text-white text-[11px] font-bold">{pts.streakDays}日</span>
-                </div>
-              )}
-              {(() => {
-                const next = getNextLevelPts(pts.total);
-                if (!next) return <span className="text-amber-300 text-[10px] font-bold">MAX!</span>;
-                const pct = Math.round((pts.total / next) * 100);
-                return (
-                  <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-300 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                );
-              })()}
-            </div>
+            <h1 className="text-white text-2xl font-bold tracking-tight">パシャ食Ai</h1>
+            <p className="text-white/60 text-xs mt-0.5">📷 撮るだけで献立が出る</p>
           </div>
           {/* 言語セレクタ */}
-          <div className="relative mt-1">
+          <div className="relative">
             <button
               onClick={() => setLangOpen((v) => !v)}
-              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30
                          text-white rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
             >
               <span>{LANG_META[lang].flag}</span>
@@ -392,46 +303,130 @@ export default function Home() {
             )}
           </div>
         </div>
-
-        {/* 冷蔵庫スコア */}
-        {!loading && allItems.length > 0 && (
-          <div className="mt-4 bg-white/15 rounded-2xl px-4 py-3 flex items-center justify-between">
-            <div>
-              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider">{t.homeFridgeScore}</p>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-white text-2xl font-black">{fridgeScore}点</span>
-                <span className={`text-sm font-bold ${scoreMeta.color}`}>{scoreMeta.label}</span>
-              </div>
-            </div>
-            {savingsCount > 0 && (
-              <p className="text-white/70 text-xs text-right leading-snug">
-                {t.homeSavingsDesc(savingsCount)}
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
-      <div className="px-4 mt-6 space-y-6">
+      <div className="px-4 mt-6 space-y-5">
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        {/* ── 優先食材 ── */}
+        {/* ── PRIMARY CTA ── */}
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{t.homePriorityTitle}</h2>
-            <span className="text-sm text-gray-400">{t.homeItemCount(priorityItems.length)}</span>
-          </div>
+          <p className="text-center text-gray-500 text-sm mb-3">
+            AIが今ある食材で献立を考えます🍽️
+          </p>
 
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2].map((i) => <div key={i} className="h-16 bg-white rounded-2xl card-shadow animate-pulse" />)}
-            </div>
-          ) : priorityItems.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center card-shadow">
-              <p className="text-gray-500 text-base font-semibold">{t.homeEmptyTitle}</p>
-              <p className="text-gray-400 text-sm mt-1">{t.homeEmptyHint}</p>
-            </div>
-          ) : (
+          <div className="relative">
+            <button
+              onClick={() => cameraRef.current?.click()}
+              disabled={loadingRecipes || photoLoading}
+              className="w-full py-5 rounded-2xl bg-emerald-600 text-white font-bold text-lg
+                         shadow-lg shadow-emerald-200 flex items-center justify-center gap-3
+                         active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {photoLoading ? (
+                <>
+                  <span className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full inline-block" />
+                  解析中...
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl">📷</span>
+                  写真で献立を考える
+                </>
+              )}
+            </button>
+            {photoCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 text-white
+                               text-[10px] font-bold rounded-full flex items-center justify-center z-10">
+                {photoCount}
+              </span>
+            )}
+          </div>
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handlePhotoRecipe}
+          />
+
+          {/* 在庫から生成（食材があるときのみ） */}
+          {allItems.length > 0 && recipes.length === 0 && (
+            <button
+              onClick={() => handleGenerate()}
+              disabled={loadingRecipes || priorityItems.length === 0}
+              className="w-full mt-2 py-3.5 rounded-2xl border border-amber-200 bg-amber-50
+                         text-amber-800 font-semibold text-sm flex items-center justify-center gap-2
+                         active:scale-[0.98] transition-all disabled:opacity-40"
+            >
+              {loadingRecipes ? (
+                <>
+                  <span className="animate-spin w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full inline-block" />
+                  考え中...
+                </>
+              ) : (
+                "🥕 今ある食材で献立を考える"
+              )}
+            </button>
+          )}
+        </section>
+
+        {/* ── サブ機能ショートカット ── */}
+        <div className="grid grid-cols-3 gap-2">
+          <Link
+            href="/inventory"
+            className="flex flex-col items-center gap-1 bg-white rounded-2xl py-3.5 card-shadow active:scale-[0.97] transition-all"
+          >
+            <span className="text-2xl">❄️</span>
+            <span className="text-[11px] font-semibold text-gray-600">食材管理</span>
+          </Link>
+          <Link
+            href="/add"
+            className="flex flex-col items-center gap-1 bg-white rounded-2xl py-3.5 card-shadow active:scale-[0.97] transition-all"
+          >
+            <span className="text-2xl">➕</span>
+            <span className="text-[11px] font-semibold text-gray-600">食材を追加</span>
+          </Link>
+          <Link
+            href="/baby"
+            className="flex flex-col items-center gap-1 bg-pink-50 rounded-2xl py-3.5 card-shadow border border-pink-100 active:scale-[0.97] transition-all"
+          >
+            <span className="text-2xl">👶</span>
+            <span className="text-[11px] font-semibold text-pink-600">離乳食</span>
+          </Link>
+        </div>
+
+        {/* ── デモモード（食材ゼロ時のみ） ── */}
+        {isEmpty && (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100">
+            <p className="font-bold text-amber-800 mb-1">{t.demoTitle}</p>
+            <p className="text-amber-600 text-sm mb-4">{t.demoDesc}</p>
+            <button
+              onClick={handleDemo}
+              disabled={demoLoading}
+              className="w-full py-3 bg-amber-600 text-white rounded-2xl font-bold text-sm
+                         shadow-md shadow-amber-200 disabled:opacity-50 active:scale-[0.98] transition-all"
+            >
+              {demoLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  {t.demoLoading}
+                </span>
+              ) : t.demoBtn}
+            </button>
+          </div>
+        )}
+
+        {/* ── 優先食材 ── */}
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => <div key={i} className="h-16 bg-white rounded-2xl card-shadow animate-pulse" />)}
+          </div>
+        ) : priorityItems.length > 0 && (
+          <section>
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+              {t.homePriorityTitle}
+            </h2>
             <div className="space-y-2">
               {priorityItems.map((item) => (
                 <FoodCard
@@ -443,103 +438,31 @@ export default function Home() {
                 />
               ))}
             </div>
-          )}
-        </section>
-
-        {/* ── デモモード ── */}
-        {isEmpty && (
-          <section>
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100">
-              <p className="text-xl mb-1">✨</p>
-              <p className="font-bold text-amber-800 text-base mb-1">{t.demoTitle}</p>
-              <p className="text-amber-600 text-sm mb-4">{t.demoDesc}</p>
-              <button
-                onClick={handleDemo}
-                disabled={demoLoading}
-                className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold text-base
-                           shadow-md shadow-amber-200 disabled:opacity-50 active:scale-98 transition-all"
-              >
-                {demoLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                    {t.demoLoading}
-                  </span>
-                ) : t.demoBtn}
-              </button>
-            </div>
           </section>
         )}
 
         {/* ── レシピ ── */}
-        <section>
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">{t.homeTodayTitle}</h2>
-          {recipes.length === 0 && (
-            <p className="text-xs text-gray-400 mb-3">{t.homeGenerateDesc}</p>
-          )}
-
-          {recipes.length === 0 ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleGenerate()}
-                disabled={loadingRecipes || photoLoading || priorityItems.length === 0}
-                className="flex-1 py-5 rounded-2xl font-bold text-base transition-all
-                           bg-amber-600 text-white shadow-md shadow-amber-200
-                           disabled:opacity-40 disabled:shadow-none active:scale-98"
-              >
-                {loadingRecipes ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                    {t.homeGenerating}
-                  </span>
-                ) : t.homeGenerate}
-              </button>
-
-              <div className="relative w-16 shrink-0">
+        {recipes.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                {t.homeTodayTitle}
+              </h2>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => cameraRef.current?.click()}
-                  disabled={loadingRecipes || photoLoading}
-                  title="写真から献立を考える"
-                  className="w-full h-full min-h-[60px] rounded-2xl bg-white border border-amber-200 text-amber-600
-                             shadow-md shadow-amber-100 text-2xl flex items-center justify-center
-                             disabled:opacity-40 active:scale-95 transition-all"
-                >
-                  {photoLoading
-                    ? <span className="animate-spin w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full inline-block" />
-                    : "📸"}
-                </button>
-                {photoCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white
-                                   text-[10px] font-bold rounded-full flex items-center justify-center z-10">
-                    {photoCount}
-                  </span>
-                )}
+                  onClick={() => setServings((s) => Math.max(1, s - 1))}
+                  className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold flex items-center justify-center active:bg-gray-200"
+                >−</button>
+                <span className="text-sm font-bold text-gray-800 w-14 text-center">
+                  {t.homeServings(servings)}
+                </span>
+                <button
+                  onClick={() => setServings((s) => Math.min(6, s + 1))}
+                  className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center active:bg-amber-200"
+                >＋</button>
               </div>
-              <input
-                ref={cameraRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handlePhotoRecipe}
-              />
             </div>
-          ) : (
             <div className="space-y-3">
-              {/* 人数セレクター */}
-              <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-2.5 card-shadow">
-                <span className="text-xs font-semibold text-gray-500">{t.homeServingNote}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setServings((s) => Math.max(1, s - 1))}
-                    className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-base flex items-center justify-center active:bg-gray-200"
-                  >−</button>
-                  <span className="text-sm font-bold text-gray-800 w-16 text-center">{t.homeServings(servings)}</span>
-                  <button
-                    onClick={() => setServings((s) => Math.min(6, s + 1))}
-                    className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-base flex items-center justify-center active:bg-amber-200"
-                  >＋</button>
-                </div>
-              </div>
               {recipes.map((r, i) => (
                 <RecipeCard key={i} recipe={r} index={i} servings={servings} onCooked={handleCooked} />
               ))}
@@ -548,16 +471,19 @@ export default function Home() {
                   {sideDish}
                 </p>
               )}
-              <button onClick={() => setRecipes([])} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setRecipes([])}
+                className="w-full py-2 text-sm text-gray-400 hover:text-gray-600"
+              >
                 {t.homeRegenerate}
               </button>
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* ── 残り物リメークAI ── */}
         <section>
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
             残り物リメーク
           </h2>
           <RemakeCard />
@@ -565,7 +491,7 @@ export default function Home() {
 
         {/* ── 即席ラーメンアレンジAI ── */}
         <section>
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
             即席ラーメンアレンジ
           </h2>
           <RamenRemakeCard />
@@ -578,7 +504,7 @@ export default function Home() {
       />
       <BottomNav />
 
-      {/* ── 食材変更モーダル ── */}
+      {/* ── 食材編集モーダル ── */}
       {editingItem && (
         <div
           className="fixed inset-0 bg-black/40 flex items-end justify-center z-50"
@@ -590,7 +516,6 @@ export default function Home() {
           >
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
             <h3 className="font-bold text-lg text-gray-800">{editingItem.name}</h3>
-
             <div>
               <label className="text-sm text-gray-500 mb-1 block">{t.addQtyLabel}</label>
               <input
@@ -601,7 +526,6 @@ export default function Home() {
                 className="w-full border border-gray-200 rounded-xl p-3 text-base focus:outline-none focus:border-teal-400"
               />
             </div>
-
             <div>
               <label className="text-sm text-gray-500 mb-1 block">{t.addExpiryLabel}</label>
               <input
@@ -612,7 +536,6 @@ export default function Home() {
                 className="w-full border border-gray-200 rounded-xl p-3 text-base focus:outline-none focus:border-teal-400"
               />
             </div>
-
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setEditingItem(null)}
