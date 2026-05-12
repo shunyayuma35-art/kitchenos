@@ -57,29 +57,13 @@ export default function CharacterHUD({ items, fridgeScore }: Props) {
 
   return (
     <>
-      {/* ── 背景ゴースト（半透明・背景層） ── */}
+      {/* ── 背景ゴースト（デスクトップのみ・軽量版） ── */}
       <div
-        className="fixed inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
-        style={{ zIndex: 0 }}
+        className="fixed inset-0 hidden md:flex items-center justify-center pointer-events-none select-none overflow-hidden"
+        style={{ zIndex: 0, opacity: 0.09 }}
         aria-hidden
       >
-        <motion.span
-          key={emoji}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={
-            mood === "warning"
-              ? { opacity: [0.08, 0.13, 0.08], scale: 1 }
-              : { opacity: 0.09, scale: 1 }
-          }
-          transition={
-            mood === "warning"
-              ? { repeat: Infinity, duration: 2.5, ease: "easeInOut" }
-              : { duration: 1.2 }
-          }
-          style={{ fontSize: "65vw", lineHeight: 1 }}
-        >
-          {emoji}
-        </motion.span>
+        <span style={{ fontSize: "28vw", lineHeight: 1 }}>{emoji}</span>
       </div>
 
       {/* ── キャラHUD本体（fixed 右下） ── */}
