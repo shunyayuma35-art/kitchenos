@@ -10,13 +10,10 @@ import type { FoodItem, Recipe, IdentifiedItem } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import FoodCard from "@/components/FoodCard";
 import RecipeCard from "@/components/RecipeCard";
-import RemakeCard from "@/components/RemakeCard";
-import RamenRemakeCard from "@/components/RamenRemakeCard";
 import { useT, useLang } from "@/lib/LangContext";
 import { LANG_META, type Lang } from "@/lib/i18n";
 import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens";
 import { rt, getFallbackRecipes } from "@/utils/recipe_translations";
-import Link from "next/link";
 import nextDynamic from "next/dynamic";
 import { getPoints, getLevel } from "@/lib/points";
 
@@ -381,30 +378,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── サブ機能ショートカット ── */}
-        <div className="grid grid-cols-3 gap-2">
-          <Link
-            href="/inventory"
-            className="flex flex-col items-center gap-1 bg-white rounded-2xl py-3.5 card-shadow active:scale-[0.97] transition-all"
-          >
-            <span className="text-2xl">❄️</span>
-            <span className="text-[11px] font-semibold text-gray-600">食材管理</span>
-          </Link>
-          <Link
-            href="/add"
-            className="flex flex-col items-center gap-1 bg-white rounded-2xl py-3.5 card-shadow active:scale-[0.97] transition-all"
-          >
-            <span className="text-2xl">➕</span>
-            <span className="text-[11px] font-semibold text-gray-600">食材を追加</span>
-          </Link>
-          <Link
-            href="/baby"
-            className="flex flex-col items-center gap-1 bg-pink-50 rounded-2xl py-3.5 card-shadow border border-pink-100 active:scale-[0.97] transition-all"
-          >
-            <span className="text-2xl">👶</span>
-            <span className="text-[11px] font-semibold text-pink-600">離乳食</span>
-          </Link>
-        </div>
 
         {/* ── デモモード（食材ゼロ時のみ） ── */}
         {isEmpty && (
@@ -491,21 +464,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── 残り物リメークAI ── */}
-        <section>
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-            残り物リメーク
-          </h2>
-          <RemakeCard />
-        </section>
-
-        {/* ── 即席ラーメンアレンジAI ── */}
-        <section>
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-            即席ラーメンアレンジ
-          </h2>
-          <RamenRemakeCard />
-        </section>
       </div>
 
       <CharacterHUD
