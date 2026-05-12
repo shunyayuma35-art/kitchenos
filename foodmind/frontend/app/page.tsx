@@ -18,6 +18,7 @@ import { loadExcludedAllergens, getAllergenNamesFromKeys } from "@/lib/allergens
 import { rt, getFallbackRecipes } from "@/utils/recipe_translations";
 import Link from "next/link";
 import nextDynamic from "next/dynamic";
+import { getPoints, getLevel } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export default function Home() {
   const [photoLoading, setPhotoLoading]   = useState(false);
   const [photoCount, setPhotoCount]       = useState(0);
   const [langOpen, setLangOpen]           = useState(false);
+  const [ptsTotal, setPtsTotal]           = useState(0);
   const cameraRef     = useRef<HTMLInputElement>(null);
   const lastGenParams = useRef<{ priority: string[]; all: string[] } | null>(null);
 
@@ -114,6 +116,7 @@ export default function Home() {
   useEffect(() => {
     loadData().finally(() => setLoading(false));
     setPhotoCount(getFridgePhotoCount());
+    setPtsTotal(getPoints().total);
   }, [loadData]);
 
   async function handleCooked(recipe: Recipe) {
@@ -273,7 +276,14 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-white text-2xl font-bold tracking-tight">パシャ食Ai</h1>
-            <p className="text-white/60 text-xs mt-0.5">📷 撮るだけで献立が出る</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-white/60 text-xs">📷 撮るだけで献立が出る</p>
+              {ptsTotal > 0 && (
+                <span className="text-[10px] bg-white/20 text-amber-200 rounded-full px-2 py-0.5 font-bold">
+                  ⭐ {ptsTotal}P · Lv{getLevel(ptsTotal)}
+                </span>
+              )}
+            </div>
           </div>
           {/* 言語セレクタ */}
           <div className="relative">

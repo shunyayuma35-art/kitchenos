@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
+import { fetchItems } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -148,7 +149,14 @@ const ALLERGEN_EMOJI: Record<string, string> = {
 };
 
 export default function BabyPage() {
-  const [openId, setOpenId] = useState<string>("middle");
+  const [openId, setOpenId]       = useState<string>("middle");
+  const [fridgeItems, setFridgeItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchItems()
+      .then((items) => setFridgeItems(items.map((i) => i.name)))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="max-w-sm mx-auto min-h-screen bg-gray-50 pb-28">
@@ -217,13 +225,22 @@ export default function BabyPage() {
                       かんたんレシピ
                     </p>
                     <div className="space-y-2">
-                      {stage.recipes.map((recipe) => (
+                      {stage.recipes.map((recipe) => {
+                        const hasFridgeMatch = recipe.ingredients.some((ing) =>
+                          fridgeItems.some((f) => ing.includes(f))
+                        );
+                        return (
                         <div
                           key={recipe.name}
                           className="bg-white rounded-xl p-3.5 border border-gray-100"
                         >
                           <div className="flex items-start justify-between gap-2 mb-1">
-                            <p className="font-bold text-gray-800 text-sm">{recipe.name}</p>
+                            <div>
+                              <p className="font-bold text-gray-800 text-sm">{recipe.name}</p>
+                              {hasFridgeMatch && (
+                                <span className="text-[10px] text-emerald-600 font-bold">✓ 今の冷蔵庫で作れます</span>
+                              )}
+                            </div>
                             {recipe.allergens.length > 0 && (
                               <div className="flex flex-wrap gap-1 shrink-0">
                                 {recipe.allergens.map((a) => (
@@ -242,7 +259,8 @@ export default function BabyPage() {
                           </p>
                           <p className="text-xs text-gray-600 leading-relaxed">{recipe.howTo}</p>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
